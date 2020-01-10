@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>JavaScript 糟粕集 - Small Fly</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="Smallfly" /><meta name="description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
+虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.62.2 with theme even" />
+
+
+<link rel="canonical" href="http://localhost:1313/post/js-drawback/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.c2a46f00.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="JavaScript 糟粕集" />
+<meta property="og:description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
+虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://localhost:1313/post/js-drawback/" />
+<meta property="article:published_time" content="2020-01-10T17:24:00+08:00" />
+<meta property="article:modified_time" content="2020-01-10T17:24:00+08:00" />
+<meta itemprop="name" content="JavaScript 糟粕集">
+<meta itemprop="description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
+虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。">
+<meta itemprop="datePublished" content="2020-01-10T17:24:00&#43;08:00" />
+<meta itemprop="dateModified" content="2020-01-10T17:24:00&#43;08:00" />
+<meta itemprop="wordCount" content="1073">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="JavaScript 糟粕集"/>
+<meta name="twitter:description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
+虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Small Fly</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">Small Fly</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">JavaScript 糟粕集</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-01-10 </span>
+        <div class="post-category">
+            <a href="/categories/javascript/"> JavaScript </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#1-typeof-null">1. typeof null</a></li>
+        <li><a href="#2-nan">2. NaN</a></li>
+        <li><a href="#3-undefined-和-null">3. undefined 和 null</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。</p>
+<p>虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。</p>
+<p>如果在新版本中强行的移除，会导致无法预料的灾难，因此即使是 bug 依然得在新版本中保留。</p>
+<p>这对于 JavaScript 新秀很不友好，除了要掌握它新的特性，还得了解老版本留下来的坑。</p>
+<p>JavaScript 虽然有不少糟粕，但也有众多的优点。这也是为什么大多数 JSer 对它又恨又爱。</p>
+<p>吐槽归吐槽，理解 JavaScript 缺陷背后的原因，往往能帮助我们理解这门语言的设计初衷，从而更好的应用它。</p>
+<p>这篇文章将罗列 JavaScript 中常见的糟粕。</p>
+<h3 id="1-typeof-null">1. typeof null</h3>
+<p>ES6 之后，JavaScript 中存在 7 中内置类型：空(null), 未定义(undefined), 布尔(boolean), 数字(number), 字符串(string), 对象(object), 符号(symbol)。</p>
+<p>我们可以使用 typeof 来检测值的类型，它会返回一个字符串。其中六种值都能返回正确的类型，唯独 null 一枝独秀：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">typeof</span> <span class="kc">null</span> <span class="o">===</span> <span class="s1">&#39;object&#39;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>null 作为值类型，typeof 返回的却是 object。因此在使用 typeof 检测对象的时候，要留意值为 null 的情况。</p>
+<p>正确判断 object 类型，应该排除 null 的情况。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">isObject</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">!</span><span class="nx">obj</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">obj</span> <span class="o">===</span> <span class="s1">&#39;object&#39;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="2-nan">2. NaN</h3>
+<p>NaN（Not a Number） 表示一个非数字字面量。在执行数学运算时，出现非数值类型，或者不合法的计算，会得到这个结果。</p>
+<p>需要注意的是 NaN 的类型仍旧是 number。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">typeof</span> <span class="kc">NaN</span> <span class="o">===</span> <span class="s1">&#39;number&#39;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><p>它有一个特殊的地方是，不等于任何值，包括它自己。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kc">NaN</span> <span class="o">===</span> <span class="kc">NaN</span> <span class="c1">// false
+</span><span class="c1"></span><span class="kc">NaN</span> <span class="o">!==</span> <span class="kc">NaN</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><p>ES6 之前全局的 isNaN() 用来检测一个变量是不是 NaN，但这个函数存在缺陷，建议使用 ES6 之后 Number 提供的 Number.isNaN() 方法。</p>
+<p>NaN 是一个全局的属性，效果等同于 Nubmer.isNaN。</p>
+<p>NaN 还是合法的变量名，如果在全局范围内误用，会出现意想不到的结果。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="kc">NaN</span> <span class="o">=</span> <span class="mi">101</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="kc">NaN</span><span class="p">)</span> <span class="c1">// 101
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nb">Number</span><span class="p">.</span><span class="nb">isNaN</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">0</span><span class="p">)</span><span class="p">)</span><span class="p">;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="3-undefined-和-null">3. undefined 和 null</h3>
+<p>undefined 表示变量未定义，在其它语言中，如果变量（对象）没有定义，默认会初始化为 null。</p>
+<p>JavaScript 变量如果没有赋值，默认为 undefined，null 就显得有些多余。</p>
+<p>在概念上它们还有区别的，以坐地铁为例， undefined 表示没有位置，而 null 表示的是有位置，但是这个位置没人座。</p>
+<p>很少有场景需要区分的这么细，一般我们判断对象是否存在，都会把它转为布尔类型，null 和 undefined 转为布尔类型都是 false。</p>
+<p>undefined 其实是一个全局变量，它不可改，不可配置，不可枚举。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">desc</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">getOwnPropertyDescriptor</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="s1">&#39;undefined&#39;</span><span class="p">)</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">desc</span><span class="p">)</span><span class="p">;</span>
+<span class="cm">/**
+</span><span class="cm">{ value: undefined,
+</span><span class="cm">  writable: false,
+</span><span class="cm">  enumerable: false,
+</span><span class="cm">  configurable: false
+</span><span class="cm">}
+</span><span class="cm">*/</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在语法层面 undefined 能够作为普通变量来使用，因此存在一定的安全隐患。好在它不会覆盖全局的 undefined 的，误用的可能性并不大。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="kc">undefined</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="kc">undefined</span><span class="p">)</span> <span class="c1">// 1
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">global</span><span class="p">.</span><span class="kc">undefined</span><span class="p">)</span> <span class="c1">// undefined
+</span></code></pre></td></tr></table>
+</div>
+</div><p>(未完待续&hellip;)</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">Smallfly</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2020-01-10
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      
+      <nav class="post-nav">
+        
+        
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  <a href="http://localhost:1313/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">Smallfly</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.26188efa.min.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
