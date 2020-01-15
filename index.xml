@@ -18,7 +18,7 @@
       
       <guid>iostalks.github.io/post/js-drawback/</guid>
       <description>&lt;p&gt;JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。&lt;/p&gt;
-&lt;p&gt;虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。&lt;/p&gt;</description>
+&lt;p&gt;虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。&lt;/p&gt;</description>
     </item>
     
   </channel>

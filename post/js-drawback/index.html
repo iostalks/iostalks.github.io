@@ -17,7 +17,7 @@
 
 
 <meta name="author" content="Smallfly" /><meta name="description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
-虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。
+虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。
 " />
 
 
@@ -36,30 +36,30 @@
 <link rel="mask-icon" href="/iostalks.github.io/safari-pinned-tab.svg" color="#5bbad5">
 
 
-<link href="/iostalks.github.io/dist/even.70dfe59a.min.css" rel="stylesheet">
+<link href="/iostalks.github.io/dist/even.6aa8f34a.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
 
 
 <meta property="og:title" content="JavaScript 糟粕集" />
 <meta property="og:description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
-虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。" />
+虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="iostalks.github.io/post/js-drawback/" />
 <meta property="article:published_time" content="2020-01-10T17:24:00+08:00" />
 <meta property="article:modified_time" content="2020-01-10T17:24:00+08:00" />
 <meta itemprop="name" content="JavaScript 糟粕集">
 <meta itemprop="description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
-虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。">
+虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。">
 <meta itemprop="datePublished" content="2020-01-10T17:24:00&#43;08:00" />
 <meta itemprop="dateModified" content="2020-01-10T17:24:00&#43;08:00" />
-<meta itemprop="wordCount" content="1073">
+<meta itemprop="wordCount" content="1572">
 
 
 
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="JavaScript 糟粕集"/>
 <meta name="twitter:description" content="JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。
-虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。"/>
+虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -140,9 +140,10 @@
   <ul>
     <li>
       <ul>
-        <li><a href="#1-typeof-null">1. typeof null</a></li>
+        <li><a href="#1typeof-null">1.typeof null</a></li>
         <li><a href="#2-nan">2. NaN</a></li>
-        <li><a href="#3-undefined-和-null">3. undefined 和 null</a></li>
+        <li><a href="#3undefined-和-null">3.undefined 和 null</a></li>
+        <li><a href="#4constructor">4.constructor</a></li>
       </ul>
     </li>
   </ul>
@@ -151,13 +152,13 @@
 </div>
     <div class="post-content">
       <p>JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。</p>
-<p>虽然 EAMCScript 规范不断的更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，或许已经被使用，并发布上线了。</p>
+<p>虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。</p>
 <p>如果在新版本中强行的移除，会导致无法预料的灾难，因此即使是 bug 依然得在新版本中保留。</p>
 <p>这对于 JavaScript 新秀很不友好，除了要掌握它新的特性，还得了解老版本留下来的坑。</p>
 <p>JavaScript 虽然有不少糟粕，但也有众多的优点。这也是为什么大多数 JSer 对它又恨又爱。</p>
 <p>吐槽归吐槽，理解 JavaScript 缺陷背后的原因，往往能帮助我们理解这门语言的设计初衷，从而更好的应用它。</p>
 <p>这篇文章将罗列 JavaScript 中常见的糟粕。</p>
-<h3 id="1-typeof-null">1. typeof null</h3>
+<h3 id="1typeof-null">1.typeof null</h3>
 <p>ES6 之后，JavaScript 中存在 7 中内置类型：空(null), 未定义(undefined), 布尔(boolean), 数字(number), 字符串(string), 对象(object), 符号(symbol)。</p>
 <p>我们可以使用 typeof 来检测值的类型，它会返回一个字符串。其中六种值都能返回正确的类型，唯独 null 一枝独秀：</p>
 <div class="highlight"><div class="chroma">
@@ -219,7 +220,7 @@
 </span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nb">Number</span><span class="p">.</span><span class="nb">isNaN</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">0</span><span class="p">)</span><span class="p">)</span><span class="p">;</span> <span class="c1">// true
 </span></code></pre></td></tr></table>
 </div>
-</div><h3 id="3-undefined-和-null">3. undefined 和 null</h3>
+</div><h3 id="3undefined-和-null">3.undefined 和 null</h3>
 <p>undefined 表示变量未定义，在其它语言中，如果变量（对象）没有定义，默认会初始化为 null。</p>
 <p>JavaScript 变量如果没有赋值，默认为 undefined，null 就显得有些多余。</p>
 <p>在概念上它们还有区别的，以坐地铁为例， undefined 表示没有位置，而 null 表示的是有位置，但是这个位置没人座。</p>
@@ -262,7 +263,75 @@
 </span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">global</span><span class="p">.</span><span class="kc">undefined</span><span class="p">)</span> <span class="c1">// undefined
 </span></code></pre></td></tr></table>
 </div>
-</div><p>(未完待续&hellip;)</p>
+</div><h3 id="4constructor">4.constructor</h3>
+<p>JavaScript 原本的设计是偏向于函数式的语言，因为作者当时所在的公司领导倾向于 Java 语言，所以引入了面向对象的特性。</p>
+<p>不同的是，JavaScript 是基于原型链继承的，能够在现有对象的基础上，创建新的对象，达到复用的目的。而不需要依赖于类。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">foo</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;foo&#39;</span><span class="p">,</span>
+  <span class="nx">getName</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kr">const</span> <span class="nx">bar</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">foo</span><span class="p">,</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="p">{</span>
+    <span class="nx">value</span><span class="o">:</span> <span class="s1">&#39;bar&#39;</span>
+  <span class="p">}</span>
+<span class="p">}</span><span class="p">)</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">bar</span><span class="p">.</span><span class="nx">getName</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">;</span> <span class="c1">// bar
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>bar</code> 通过原型链复用了 <code>foo</code> 的 <code>getName()</code> 方法。</p>
+<p>为了实现面向对象的需求，强行在对象与原型对象中间插入了构造函数。构造函数默认会关联一个原型对象，在使用构造函数创建新对象时，会把该原型对象作为新对象的原型。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">Person</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kr">const</span> <span class="nx">me</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Person</span><span class="p">(</span><span class="s1">&#39;Smallfly&#39;</span><span class="p">)</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">me</span><span class="p">.</span><span class="nx">__proto__</span> <span class="o">===</span> <span class="nx">Person</span><span class="p">.</span><span class="nx">prototype</span><span class="p">)</span><span class="p">;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><p>通过构造函数，搭建了 <code>me</code> 与原型对象 <code>Person.prototype</code> 的继承关系。</p>
+<p>这里将 <code>Person</code> 函数模拟成了一个类，并给它一个新的名字叫”构造函数“。</p>
+<p>然而，构造函数和普通函数没有区别，只是在调用时前面加了<code>new</code>关键字，普通函数就被称为了构造函数。</p>
+<p>如果我们希望函数作为构造函数调用，却忘记在前面加<code>new</code>关键字，也完全是合法的。并且还会产生额外的副作用，导致变量泄漏。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="nx">Person</span><span class="p">(</span><span class="s1">&#39;Smallfy&#39;</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">global</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span><span class="p">;</span> <span class="c1">// Smallfly
+</span></code></pre></td></tr></table>
+</div>
+</div><p>为了避免这种错误，通常采用在函数命名上作区分。在设计函数时，需要明确函数的用途，如果作为构造函数调用，就使用大写字母开头，而普通函数采小写字母开头。</p>
+<p>（未完待续&hellip; )</p>
     </div>
 
     <div class="post-copyright">
