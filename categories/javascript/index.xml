@@ -17,7 +17,8 @@
       <pubDate>Sun, 09 Feb 2020 14:45:39 +0800</pubDate>
       
       <guid>iostalks.github.io/post/js-object-toprimitive/</guid>
-      <description>JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。 [] + [] , [] + {} , ${obj} ，这些表达式计算结果是什么，又是如何</description>
+      <description>&lt;p&gt;JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;[] + []&lt;/code&gt; , &lt;code&gt;[] + {}&lt;/code&gt; , &lt;code&gt;${obj}&lt;/code&gt; ，这些表达式计算结果是什么，又是如何得出这个结果的？&lt;/p&gt;</description>
     </item>
     
     <item>
