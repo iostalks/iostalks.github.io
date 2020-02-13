@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>JavaScript 对象转值的原理 - Small Fly</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="Smallfly" /><meta name="description" content="JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。 [] &#43; [] , [] &#43; {} , ${obj} ，这些表达式计算结果是什么，又是如何" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.62.2 with theme even" />
+
+
+<link rel="canonical" href="iostalks.github.io/post/js-object-toprimitive/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/iostalks.github.io/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/iostalks.github.io/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/iostalks.github.io/favicon-16x16.png">
+<link rel="manifest" href="/iostalks.github.io/manifest.json">
+<link rel="mask-icon" href="/iostalks.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/iostalks.github.io/dist/even.6aa8f34a.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="JavaScript 对象转值的原理" />
+<meta property="og:description" content="JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。 [] &#43; [] , [] &#43; {} , ${obj} ，这些表达式计算结果是什么，又是如何" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="iostalks.github.io/post/js-object-toprimitive/" />
+<meta property="article:published_time" content="2020-02-09T14:45:39+08:00" />
+<meta property="article:modified_time" content="2020-02-09T14:45:39+08:00" />
+<meta itemprop="name" content="JavaScript 对象转值的原理">
+<meta itemprop="description" content="JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。 [] &#43; [] , [] &#43; {} , ${obj} ，这些表达式计算结果是什么，又是如何">
+<meta itemprop="datePublished" content="2020-02-09T14:45:39&#43;08:00" />
+<meta itemprop="dateModified" content="2020-02-09T14:45:39&#43;08:00" />
+<meta itemprop="wordCount" content="1734">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="JavaScript 对象转值的原理"/>
+<meta name="twitter:description" content="JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。 [] &#43; [] , [] &#43; {} , ${obj} ，这些表达式计算结果是什么，又是如何"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/iostalks.github.io/" class="logo">Small Fly</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="iostalks.github.io/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="iostalks.github.io/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="iostalks.github.io/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="iostalks.github.io/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/iostalks.github.io/" class="logo">Small Fly</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/categories/">Categories</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">JavaScript 对象转值的原理</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-02-09 </span>
+        <div class="post-category">
+            <a href="/iostalks.github.io/categories/javascript/"> JavaScript </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#求值的基础">求值的基础</a>
+      <ul>
+        <li><a href="#number">number</a></li>
+        <li><a href="#string">string</a></li>
+        <li><a href="#default">default</a></li>
+      </ul>
+    </li>
+    <li><a href="#类型转换的过程">类型转换的过程</a></li>
+    <li><a href="#symboltoprimitive">Symbol.toPrimitive</a></li>
+    <li><a href="#tostringvalueof">toString/ValueOf</a></li>
+    <li><a href="#----">[] + [] = ''</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。</p>
+<p><code>[] + []</code> , <code>[] + {}</code> , <code>${obj}</code> ，这些表达式计算结果是什么，又是如何得出这个结果的？</p>
+<p>参与数学计算的运算数必须是值类型，并且类型相同。在强类型的语言中，类型不同的值参与计算会导致编译错误。</p>
+<p>对于 js 来说，它会在运行时「智能」的进行类型转换，得到一个使用者可能期望的结果。</p>
+<p>但如果使用者对这个结果不满意，希望自定义，就需要了解运行时类型转换的原理。</p>
+<p>类型转换会发生在值类型与值类型，值类型与对象类型之间。这里我们主要来探讨一下对象到值类型的转换过程。</p>
+<h2 id="求值的基础">求值的基础</h2>
+<p>JavaScript 中存在的六种值类型：Null, Undefined, Boolean, Number, String, Symbol。</p>
+<p>既然是对象，就说明它存在，不能转为 Null 和 Undefined 类型。</p>
+<p>同理，对象一定非空，转 Boolean 类型为 <code>true</code> 。</p>
+<p>对象不会自动发生 Symbol 转换，除非使用强制类型转换函数 <code>Symbol()</code> 。</p>
+<p>比较常见的情况是，对象转 Number 和 String。</p>
+<p>根据 <a href="https://tc39.es/ecma262/#sec-toprimitive">EMACScript 规范</a>，对象转值（toPrimitive）类型会产生三种的 hint，分别是 <code>number</code> 、 <code>string</code> 、 <code>default</code> 。</p>
+<p>我们可以根据 hint 来自定义转换的目标值。</p>
+<h3 id="number"><code>number</code></h3>
+<p>显式地调用 <code>Number()</code> 函数，或者对象参与数学计算时：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="nb">Number</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span><span class="p">;</span> <span class="c1">// NaN
+</span><span class="c1"></span><span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="o">+</span><span class="nx">obj</span><span class="p">;</span> <span class="c1">// NaN
+</span><span class="c1"></span><span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="nx">obj1</span> <span class="o">-</span> <span class="nx">obj2</span><span class="p">;</span> <span class="c1">// NaN
+</span></code></pre></td></tr></table>
+</div>
+</div><p>虽然默认的计算结果为 <code>NaN</code> ，但它属于 <code>number</code> 转换。</p>
+<h3 id="string"><code>string</code></h3>
+<p>显式地调用 <code>String()</code> 函数，或者某些期望接受 String 类型的参数，当传入对象时，会发生对象到 <code>string</code> 的转换。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="nb">String</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span><span class="p">;</span> <span class="c1">// &#39;[object Object]&#39;
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="sb">`</span><span class="si">${</span><span class="nx">obj</span><span class="si">}</span><span class="sb">`</span> <span class="p">)</span><span class="p">;</span> <span class="c1">// [object Object]
+</span><span class="c1"></span><span class="nx">anotherObj</span><span class="p">[</span><span class="nx">obj</span><span class="p">]</span> <span class="o">=</span> <span class="mi">123</span><span class="p">;</span> <span class="c1">// { &#39;[object Object]&#39;: 123 }
+</span></code></pre></td></tr></table>
+</div>
+</div><p>字符串模板接受字符串参数，传入非字符串类型，会发生隐式转换。</p>
+<p>对象的属性名支持字符串和 Symbol 类型， 除这两种类型外，会默认转为字符串。</p>
+<h3 id="default"><code>default</code></h3>
+<p>当不能确定某个操作期望得到什么类型时，例如二元运算符 <code>+</code> 的结果，可能是字符串也可能是数字。因此无法确定是把运算数转为 <code>number</code> 还是 <code>string</code> 。</p>
+<p>这会产生一个 <code>default</code> 类型的 hint。</p>
+<p>对象与 String, Number, Symbol 类型进行判等，也无法确定转换的目标类型。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="c1">// 产生 default 类型的 hint
+</span><span class="c1"></span><span class="nx">obj1</span> <span class="o">+</span> <span class="nx">obj2</span><span class="p">;</span>
+<span class="nx">obj</span> <span class="o">==</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>我们不必记忆哪些情况是 <code>default</code> 类型的转换，后面会讲到，它的转换处理流程和 <code>number</code> 相同。</p>
+<p>特殊的是，比较操作符，例如： <code>&gt;</code> 、 <code>&lt;</code> ，虽然能用于比较 Number 和 String 类型，但它们的 hint 是 <code>number</code> ，这是历史遗留问题。</p>
+<h2 id="类型转换的过程">类型转换的过程</h2>
+<p>在实现上，对象到值类型的转换，会分三个步骤：</p>
+<p>1、判断对象是否存在一个属性名为 <code>Symbol.toPrimitive</code> 的函数，如果存在调用它，并传入以上三种之一的 hint 作为参数。如果这个函数返回值类型，就是对象转值的结果；如果返回非值类型，会抛出异常。如果不存在这个属性，执行下一步。</p>
+<p>2、hint 类型如果是 <code>string</code> ，会依次调用对象的 <code>toString()</code> 和 <code>valueOf()</code> 函数，直到某一个函数在该对象实现，并返回值类型为止。如果返回非值类型，会忽略这个方法。</p>
+<p>3、hint 类型如果是 <code>number</code> 或者 <code>default</code> ，会依次调用对象的 <code>valueOf()</code> 和 <code>toString()</code> ，直到某个函数在该对象实现，并返回值类型为止。如果返回非值类型，会忽略这个方法。</p>
+<h2 id="symboltoprimitive">Symbol.toPrimitive</h2>
+<p>一个实现 <code>Symbol.toPrimitive</code> 属性的 <code>user</code> 对象：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">user</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;Smallfly&#39;</span><span class="p">,</span>
+  <span class="nx">age</span><span class="o">:</span> <span class="s1">&#39;27&#39;</span><span class="p">,</span>
+  <span class="p">[</span><span class="nx">Symbol</span><span class="p">.</span><span class="nx">toPrimitive</span><span class="p">]</span><span class="p">(</span><span class="nx">hint</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="sb">`</span><span class="sb">[</span><span class="si">${</span><span class="nx">hint</span><span class="si">}</span><span class="sb">]</span><span class="sb">`</span> <span class="p">)</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">hint</span> <span class="o">===</span> <span class="s1">&#39;string&#39;</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;name: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span><span class="p">;</span>
+      <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;age: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">)</span><span class="p">;</span>
+      <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">user</span><span class="si">}</span><span class="sb">`</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [string] name: Smallfly -- Smallfly
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="o">+</span><span class="nx">user</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [number] age: 27 -- 27
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">user</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [default] age: 27 -- 27
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>user</code> 传入字符串模板触发了 <code>string</code> 转换； <code>+</code> 一元运算符触发了 <code>number</code> 转换； <code>+</code> 二元运算符触发 <code>default</code> 转换。</p>
+<p><code>Symbol.toPrimitive</code> 函数包含了 <code>user</code> 转简单值类型的所有情况。</p>
+<h2 id="tostringvalueof">toString/ValueOf</h2>
+<p>如果对象没有实现 <code>Symbol.toPrimitive</code> 方法，会继续尝试调用 <code>toString</code> 和 <code>valueOf</code> 方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">user</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;Smallfly&#39;</span><span class="p">,</span>
+  <span class="nx">age</span><span class="o">:</span> <span class="s1">&#39;27&#39;</span><span class="p">,</span>
+  <span class="nx">toString</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;[toString]&#39;</span><span class="p">)</span><span class="p">;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;name: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">;</span>
+  <span class="p">}</span><span class="p">,</span>
+  <span class="nx">valueOf</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;[valueOf]&#39;</span><span class="p">)</span><span class="p">;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;age: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">user</span><span class="si">}</span><span class="sb">`</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [toString] name: Smallfly
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="o">+</span><span class="nx">user</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [valueOf] age: 27 -- 27
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">user</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [valueOf] age: 27 -- 27
+</span></code></pre></td></tr></table>
+</div>
+</div><p>从结果上看， <code>toString/valueOf</code> 的组合功能和 <code>Symbol.toPrimitive</code> 完全一样。</p>
+<p><code>Symbol.toPrimitive</code> 是 ES6 引入的新功能，实现了对象转值类型方法的统一。</p>
+<p>对象如果没有实现这两个方法，默认使用 Object 对象的 <code>toString()/valueOf()</code> 方法， <code>toString()</code> 方法返回 <code>[object Object]</code> ， <code>valueOf()</code> 方法返回对象自身。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">obj</span> <span class="o">=</span> <span class="p">{</span><span class="p">}</span><span class="p">;</span>
+<span class="nx">obj</span><span class="p">.</span><span class="nx">toString</span><span class="p">(</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [object Object]
+</span><span class="c1"></span><span class="nx">obj</span><span class="p">.</span><span class="nx">valueOf</span><span class="p">(</span><span class="p">)</span> <span class="o">===</span> <span class="nx">obj</span><span class="p">;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id="----"><code>[] + [] = ''</code></h2>
+<p><code>[] + []</code> 表达式的结果为空字符串，我们通过这个结果观察一下对象转值的具体过程。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">[</span><span class="p">]</span><span class="p">;</span>
+
+<span class="nx">a</span><span class="p">.</span><span class="nx">toString</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="s1">&#39;array string&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">a</span><span class="p">.</span><span class="nx">valueOf</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="mi">123</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="sb">`</span><span class="si">${</span><span class="nx">a</span><span class="si">}</span><span class="sb">`</span> <span class="p">)</span><span class="p">;</span> <span class="c1">// array string
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="o">+</span><span class="nx">a</span><span class="p">)</span><span class="p">;</span> <span class="c1">// 123
+</span></code></pre></td></tr></table>
+</div>
+</div><p>以上代码证明空数组 <code>[]</code> 没有实现 <code>Symbol.toPrimitive</code> 方法，不然 <code>toString/valueOf</code> 方法不会被调用。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">[</span><span class="p">]</span><span class="p">;</span>
+
+<span class="nx">a</span><span class="p">[</span><span class="nx">Symbol</span><span class="p">.</span><span class="nx">toPrimitive</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">hint</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hint</span><span class="p">)</span><span class="p">;</span>
+  <span class="k">return</span> <span class="mi">123</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">a</span> <span class="o">+</span> <span class="nx">a</span><span class="p">)</span><span class="p">;</span>
+<span class="c1">// default
+</span><span class="c1"></span><span class="c1">// default
+</span><span class="c1"></span><span class="c1">// 246
+</span></code></pre></td></tr></table>
+</div>
+</div><p>以上代码证明 <code>[]</code> 参与加法运算产生的 hint 为 <code>default</code>。</p>
+<p>根据前面提到的类型转换的规则，<code>[] + []</code> 表达式触发 <code>[]</code> 转值类型会依次调用 <code>valueOf()</code> 和 <code>toString()</code> 方法。</p>
+<p>然而，<code>[].valueOf()</code> 返回值是空数组自身，并不是值类型，因此继续尝试调用 <code>toString()</code> 方法。</p>
+<p><code>[].toString()</code> 的结果是空字符串 <code>''</code> 。因此，<code>[] + []</code> 表达式的计算结果是 <code>''</code>。</p>
+<p><strong>参考链接</strong></p>
+<ul>
+<li><a href="https://tc39.es/ecma262/#sec-toprimitive">tc39.es</a></li>
+<li><a href="https://javascript.info/object-toprimitive#toprimitive">javascript.info</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive">Symbol.toPrimitive</a></li>
+</ul>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">Smallfly</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2020-02-09
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      
+      <nav class="post-nav">
+        
+        <a class="next" href="iostalks.github.io/post/js-drawback/">
+            <span class="next-text nav-default">JavaScript 糟粕集</span>
+            <span class="next-text nav-mobile">Next</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  <a href="iostalks.github.io/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">Smallfly</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/iostalks.github.io/dist/even.26188efa.min.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
