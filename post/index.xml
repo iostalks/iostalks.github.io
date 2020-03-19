@@ -6,10 +6,23 @@
     <description>Recent content in Posts on Small Fly</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
-    <lastBuildDate>Sun, 09 Feb 2020 14:45:39 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Mar 2020 10:01:57 +0800</lastBuildDate>
     
 	<atom:link href="iostalks.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>一文读懂跨域</title>
+      <link>iostalks.github.io/post/kills-cors-doubt/</link>
+      <pubDate>Tue, 17 Mar 2020 10:01:57 +0800</pubDate>
+      
+      <guid>iostalks.github.io/post/kills-cors-doubt/</guid>
+      <description>&lt;p&gt;前端开发经常会遇到跨域问题，通过搜索基本都能解决，或者直接交给后端处理，只要浏览器不要再报下面的错误就行。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;XMLHttpRequest cannot load &lt;a href=&#34;https://api.example.com&#34;&gt;https://api.example.com&lt;/a&gt;. No &amp;lsquo;Access-Control-Allow-Origin&amp;rsquo; header is present on the requested resource. Origin &amp;lsquo;http://localhost:8100&amp;rsquo; is therefore not allowed access.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在解决这个问题后，我还是感觉云里雾里，阅读了很多资料，最终认为自己“理解”了，以下是我的理解内容：&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>JavaScript 对象转值的原理</title>
