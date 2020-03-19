@@ -59,7 +59,7 @@ XMLHttpRequest cannot load https://api.example.com. No &lsquo;Access-Control-All
 在解决这个问题后，我还是感觉云里雾里，阅读了很多资料，最终认为自己“理解”了，以下是我的理解内容：">
 <meta itemprop="datePublished" content="2020-03-17T10:01:57&#43;08:00" />
 <meta itemprop="dateModified" content="2020-03-17T10:01:57&#43;08:00" />
-<meta itemprop="wordCount" content="1783">
+<meta itemprop="wordCount" content="1782">
 
 
 
@@ -202,13 +202,13 @@ XMLHttpRequest cannot load https://api.example.com. No &lsquo;Access-Control-All
 <p>CORS 全称跨源资源共享（Cross-Origin Resource Share)，也就是通过某种机制来共享数据。</p>
 <p>服务端在返回 Response 时，默认只允许同源的 JS 访问，如果服务端在 HTTP Response 中附加一个白名单，标记允许哪些域访问该资源，就允许了跨域访问。</p>
 <p>这个白名单就是响应头 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin">Access-Control-Allow-Origin</a>。</p>
-<p>浏览器会允许 Access-Control-Allow-Origin 白名单中的域访问 Response，如果是 <code>Access-Control-Allow-Origin: *</code> 就表示允许任何域访问该 Respone，这是存在安全隐患的。</p>
+<p>浏览器会允许 <code>Access-Control-Allow-Origin</code> 白名单中的域访问 Response，如果是 <code>Access-Control-Allow-Origin: *</code> 就表示允许任何域访问该 Respone，这是存在安全隐患的。</p>
 <p>如果恶意网站制造一个和银行网站一模一样的请求，本地 Response 缓存没有访问权限控制，浏览器会傻傻的把响应数据交给这个恶意网站。</p>
 <p>所以对于用户数据敏感接口，最好还是不要开启允许任意域访问，而是采用白名单机制。</p>
 <h2 id="小结">小结</h2>
 <p>同源策略在浏览器端保证用户数据的安全，但它也给同一个网站不同域请求的数据共享带来不便。</p>
 <p>因此就有了跨域的需求，跨域的方法有很多，本文主要介绍了 CORS 跨域，以及它的原理。</p>
-<p>虽然同源限制来自于浏览器，但允许跨域的开关掌握在服务端。这样即保证了用户数据的安全，又实现了数据的安全共享，可谓一举两得。</p>
+<p>虽然同源限制来自于浏览器，但 CORS 允许跨域的开关掌握在服务端。这样即保证了用户数据的安全，又实现了数据的共享，可谓一举两得。</p>
     </div>
 
     <div class="post-copyright">
