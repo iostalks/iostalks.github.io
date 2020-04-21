@@ -114,13 +114,19 @@
     <h1 class="post-title"><a class="post-link" href="iostalks.github.io/post/http-cache/">HTTP 客户端缓存的实现原理</a></h1>
     <div class="post-meta">
       <span class="post-time"> 2020-04-14 </span>
-      
+      <div class="post-category">
+          <a href="/iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/"> 网络 </a>
+          </div>
     </div>
   </header>
   
   <div class="post-content">
     <div class="post-summary">
-      前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关
+      <h2 id="前言">前言</h2>
+<p>HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。</p>
+<p><img src="https://raw.githubusercontent.com/iostalks/images/master/blog/20200419101524.png" alt="20200419101524.png"></p>
+<p>响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。</p>
+<p>因此，HTTP 协议引入了缓存策略。</p>
     </div>
     <div class="read-more">
       <a href="iostalks.github.io/post/http-cache/" class="read-more-link">Read more...</a>

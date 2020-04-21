@@ -16,7 +16,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
 
 
-<meta name="author" content="Smallfly" /><meta name="description" content="前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关" />
+<meta name="author" content="Smallfly" /><meta name="description" content="前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。
+响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。
+因此，HTTP 协议引入了缓存策略。
+" />
 
 
 
@@ -39,13 +42,21 @@
 
 
 <meta property="og:title" content="HTTP 客户端缓存的实现原理" />
-<meta property="og:description" content="前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关" />
+<meta property="og:description" content="前言
+HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。
+
+响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。
+因此，HTTP 协议引入了缓存策略。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="iostalks.github.io/post/http-cache/" />
 <meta property="article:published_time" content="2020-04-14T08:14:53+08:00" />
 <meta property="article:modified_time" content="2020-04-14T08:14:53+08:00" />
 <meta itemprop="name" content="HTTP 客户端缓存的实现原理">
-<meta itemprop="description" content="前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关">
+<meta itemprop="description" content="前言
+HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。
+
+响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。
+因此，HTTP 协议引入了缓存策略。">
 <meta itemprop="datePublished" content="2020-04-14T08:14:53&#43;08:00" />
 <meta itemprop="dateModified" content="2020-04-14T08:14:53&#43;08:00" />
 <meta itemprop="wordCount" content="1544">
@@ -54,7 +65,11 @@
 
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="HTTP 客户端缓存的实现原理"/>
-<meta name="twitter:description" content="前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关"/>
+<meta name="twitter:description" content="前言
+HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。
+
+响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。
+因此，HTTP 协议引入了缓存策略。"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -121,7 +136,9 @@
 
       <div class="post-meta">
         <span class="post-time"> 2020-04-14 </span>
-        
+        <div class="post-category">
+            <a href="/iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/"> 网络 </a>
+            </div>
         
       </div>
     </header>
@@ -190,7 +207,6 @@
 <p>请求头 <code>If-None-Match</code> 的值是上一次响应的 ETag，服务端收到后，会和当前资源的 ETag 作对比，如果没有发生变化，返回 <code>304 Not Modified</code> ，否则返回最新的资源。</p>
 <h2 id="小结">小结</h2>
 <p>本文主要介绍了使用 HTTP 缓存的原因，以及如何控制 HTTP 的缓存。在尽可能利用缓存的前提下，保证缓存数据的有效数据。</p>
-
     </div>
 
     <div class="post-copyright">

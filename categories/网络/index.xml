@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>网络 on Small Fly</title>
+    <link>iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/</link>
+    <description>Recent content in 网络 on Small Fly</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>Smallfly</copyright>
+    <lastBuildDate>Tue, 14 Apr 2020 08:14:53 +0800</lastBuildDate>
+    
+	<atom:link href="iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>HTTP 客户端缓存的实现原理</title>
+      <link>iostalks.github.io/post/http-cache/</link>
+      <pubDate>Tue, 14 Apr 2020 08:14:53 +0800</pubDate>
+      
+      <guid>iostalks.github.io/post/http-cache/</guid>
+      <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;
+&lt;p&gt;HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/iostalks/images/master/blog/20200419101524.png&#34; alt=&#34;20200419101524.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。&lt;/p&gt;
+&lt;p&gt;因此，HTTP 协议引入了缓存策略。&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

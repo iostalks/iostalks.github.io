@@ -17,7 +17,11 @@
       <pubDate>Tue, 14 Apr 2020 08:14:53 +0800</pubDate>
       
       <guid>iostalks.github.io/post/http-cache/</guid>
-      <description>前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关</description>
+      <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;
+&lt;p&gt;HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/iostalks/images/master/blog/20200419101524.png&#34; alt=&#34;20200419101524.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;响应时间是应用程序关键的性能指标。提高 HTTP 请求的响应速度，是非常重要的优化手段。&lt;/p&gt;
+&lt;p&gt;因此，HTTP 协议引入了缓存策略。&lt;/p&gt;</description>
     </item>
     
     <item>
