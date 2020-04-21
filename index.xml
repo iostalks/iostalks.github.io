@@ -6,10 +6,19 @@
     <description>Recent content on Small Fly</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
-    <lastBuildDate>Tue, 17 Mar 2020 10:01:57 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 14 Apr 2020 08:14:53 +0800</lastBuildDate>
     
 	<atom:link href="iostalks.github.io/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>HTTP 客户端缓存的实现原理</title>
+      <link>iostalks.github.io/post/http-cache/</link>
+      <pubDate>Tue, 14 Apr 2020 08:14:53 +0800</pubDate>
+      
+      <guid>iostalks.github.io/post/http-cache/</guid>
+      <description>前言 HTTP 是最常见的应用层协议。它是一种同步的协议，客户端发出请求后，需要等待服务端的响应，在等待过程中，请求线程会被阻塞。 响应时间是应用程序关</description>
+    </item>
     
     <item>
       <title>一文读懂 CORS 跨域</title>

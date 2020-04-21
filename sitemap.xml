@@ -2,21 +2,28 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>iostalks.github.io/categories/</loc>
-    <lastmod>2020-03-17T10:01:57+08:00</lastmod>
+    <loc>iostalks.github.io/post/http-cache/</loc>
+    <lastmod>2020-04-14T08:14:53+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>iostalks.github.io/post/</loc>
-    <lastmod>2020-03-17T10:01:57+08:00</lastmod>
+    <lastmod>2020-04-14T08:14:53+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>iostalks.github.io/</loc>
+    <lastmod>2020-04-14T08:14:53+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>iostalks.github.io/categories/</loc>
     <lastmod>2020-03-17T10:01:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
