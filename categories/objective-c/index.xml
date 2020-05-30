@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Objective-C on Small Fly</title>
+    <link>iostalks.github.io/categories/objective-c/</link>
+    <description>Recent content in Objective-C on Small Fly</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>Smallfly</copyright>
+    <lastBuildDate>Sun, 31 May 2020 00:02:44 +0800</lastBuildDate>
+    
+	<atom:link href="iostalks.github.io/categories/objective-c/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>再读 《Objective-C 高级编程》内存管理篇</title>
+      <link>iostalks.github.io/post/objc-memory-manage/</link>
+      <pubDate>Sun, 31 May 2020 00:02:44 +0800</pubDate>
+      
+      <guid>iostalks.github.io/post/objc-memory-manage/</guid>
+      <description>&lt;p&gt;以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。&lt;/p&gt;
+&lt;p&gt;原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。&lt;/p&gt;
+&lt;p&gt;全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。&lt;/p&gt;
+&lt;p&gt;这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。&lt;/p&gt;
+&lt;p&gt;第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

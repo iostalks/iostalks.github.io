@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>再读 《Objective-C 高级编程》内存管理篇 - Small Fly</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="Smallfly" /><meta name="description" content="以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。
+原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。
+全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。
+这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。
+第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.62.2 with theme even" />
+
+
+<link rel="canonical" href="iostalks.github.io/post/objc-memory-manage/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/iostalks.github.io/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/iostalks.github.io/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/iostalks.github.io/favicon-16x16.png">
+<link rel="manifest" href="/iostalks.github.io/manifest.json">
+<link rel="mask-icon" href="/iostalks.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/iostalks.github.io/dist/even.6aa8f34a.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="再读 《Objective-C 高级编程》内存管理篇" />
+<meta property="og:description" content="以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。
+原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。
+全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。
+这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。
+第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="iostalks.github.io/post/objc-memory-manage/" />
+<meta property="article:published_time" content="2020-05-31T00:02:44+08:00" />
+<meta property="article:modified_time" content="2020-05-31T00:02:44+08:00" />
+<meta itemprop="name" content="再读 《Objective-C 高级编程》内存管理篇">
+<meta itemprop="description" content="以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。
+原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。
+全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。
+这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。
+第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。">
+<meta itemprop="datePublished" content="2020-05-31T00:02:44&#43;08:00" />
+<meta itemprop="dateModified" content="2020-05-31T00:02:44&#43;08:00" />
+<meta itemprop="wordCount" content="1748">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="再读 《Objective-C 高级编程》内存管理篇"/>
+<meta name="twitter:description" content="以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。
+原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。
+全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。
+这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。
+第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/iostalks.github.io/" class="logo">Small Fly</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="iostalks.github.io/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="iostalks.github.io/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="iostalks.github.io/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="iostalks.github.io/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/iostalks.github.io/" class="logo">Small Fly</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="iostalks.github.io/categories/">Categories</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">再读 《Objective-C 高级编程》内存管理篇</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-05-31 </span>
+        <div class="post-category">
+            <a href="/iostalks.github.io/categories/objective-c/"> Objective-C </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#引用计数">引用计数</a></li>
+    <li><a href="#weak">weak</a></li>
+    <li><a href="#autorelease">autorelease</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。</p>
+<p>原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。</p>
+<p>全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。</p>
+<p>这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。</p>
+<p>第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。</p>
+<h2 id="引用计数">引用计数</h2>
+<p>引用计数与是否开启 ARC 无关，区别仅仅在于管理引用计数的 retain/relase 方法，是由程序员手写，还是在编译时插入。</p>
+<p>引用计数的原理非常简单：对象的引用计数大于 0 时存活，等于 0 时销毁。</p>
+<p>然而，具体到上下文环境，就没有这么简单了。内存管理中有四句口诀：</p>
+<ul>
+<li>自己生成的对象，自己持有；</li>
+<li>非自己生成的对象，自己也能持有；</li>
+<li>不再需要自己持有的对象时释放；</li>
+<li>非自己持有的对象无法释放。</li>
+</ul>
+<p>自己生成的对象，引用计数默认为 1，不需要调用 retain 方法增加引用计数。那么怎么才算自己生成的对象呢？由 alloc/new/copy/mutableCopy 创建的对象。</p>
+<p>从 objc 源码窥探，新生成的对象，isa_t 结构体中 <code>extra_rc</code> 字段的值为 0，表示没有额外的引用计数，只有「自己」持有，所以引用计数为 1。</p>
+<p>非自己生成的对象，自己也能持有，前提是必须调用 retain 方法。而在 ARC 时代，retain 方法是由编译器添加的。</p>
+<p>前面讲到，自己生成的对象不需要调用 retain 方法，那编译器怎么区分这两种场景呢？</p>
+<p>通过文本检查，也就是判断对象是不是由包含 alloc/new/copy/mutableCopy 的表达式返回的。ARC 下又增加了对 init 的检查。</p>
+<p>因此实际在编写 init 方法时，要符合编译器内存管理的语义，该方法必须由 alloc 创建的对象调用，并且编译器不会把返回值注册到 autoreleasePool。</p>
+<p>在 init 方法内部，新创建的对象引用计数为 1，返回时不会向超出作用域的局部变量发送 release 消息，因此不把它注册到 autoreleasePool，调用方也能顺利持有创建结果。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-objc" data-lang="objc"><span class="p">{</span>
+  <span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[</span><span class="p">[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span><span class="p">;</span>
+<span class="p">}</span> <span class="c1">// obj 释放
+</span></code></pre></td></tr></table>
+</div>
+</div><p>如果 init 的返回值没有人持有，则会在返回时向新创建的对象发送 release 消息，立即释放对象。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-objc" data-lang="objc"><span class="p">{</span>
+  <span class="p">[</span><span class="p">[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span><span class="p">;</span> <span class="c1">// 立即释放
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>对象在引用计数为 1 时，处理 release 消息过程中，会继续向对象发送 dealloc 消息，销毁对象。</p>
+<p>销毁对象的过程在 NSObject 的 dealloc 方法中实现，在 ARC 下，我们一般重写 dealloc 方法时，不需要也不能调用 [super dealloc]，是因为编译器自动为为我们插入了 super 调用。</p>
+<h2 id="weak">weak</h2>
+<p>仅仅依赖 retain/release 来维护引用计数是不够的，常见的内存泄漏场景便是循环引用。</p>
+<p>打破引用环的唯一方式，让一方不强引用另一方。unsafe_unretain 能实现不增加引用计数，但会导致野指针，在 ARC 下 weak 引用是最佳选择。</p>
+<p>weak 引用不持有对象，只能作为强引用的辅助，只有 weak 引用的对象会立即释放，并且将所有弱引用指针都置为 nil。</p>
+<p>weak 引用需额外做很多工作，因此有一定的性能开销。被 weak 引用的对象，在 isa_t 结构体中会有所标记，并使用哈希表来维护弱引用指针。key 为对象地址的哈希，值为数组，用于存储弱引用指针列表。</p>
+<p>而当弱引用指针超过 4 个时，会将数组改为哈希表，进一步降低执行效率和增加空间占用。</p>
+<p>其中的实现还是蛮值得思考的，为什么要将数组存储转为哈希表呢？哈希表实际上也是基于数组实现的，并且存在负载因子，需要比实际存储数据，消耗更多的内存。</p>
+<p>其实是一种以空间换时间的思想，数组的访问时间复杂度是 O(n) 的，在数据量增大时，访问速度线性递减。而哈希表访问的平均时间为 O(1)。</p>
+<h2 id="autorelease">autorelease</h2>
+<p>内存管理中还有一种常见的需求，如何做对象所有权的转移。</p>
+<p>对于以对象作为返回值的方法，在返回前如果调用 release，对象会立即销毁，调用方将无法取到返回值。而如果返回前不调用 release，应该如何保持引用计数的平衡呢？</p>
+<p>因此，引入了 autoreleasePool，借助外界的力量。对象调用 autorelease 方法，会被加入自动释放池，引用计数加 1，加入自动释放池的对象不需要手动释放，在合适的时机由释放池负责清理。</p>
+<p>在对象返回前，先加入自动释放池，再调用 release 方法，对象便不会被立即销毁，等调用方能顺利的取到对象，立即调用 retain 持有，以防稍后被自动释放池清理。</p>
+<p>以上实现方法返回值对象所有权的转移，同时满足了「非自己生成的对象，自己也能持有」。</p>
+<p>这些实现在 ARC 下，都由编译器负责，在 release 模式下，会做些优化，但原理依然不变。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">Smallfly</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2020-05-31
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      
+      <nav class="post-nav">
+        
+        <a class="next" href="iostalks.github.io/post/http-cache/">
+            <span class="next-text nav-default">HTTP 客户端缓存的实现原理</span>
+            <span class="next-text nav-mobile">Next</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  <a href="iostalks.github.io/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">Smallfly</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/iostalks.github.io/dist/even.26188efa.min.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
