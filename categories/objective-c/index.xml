@@ -6,10 +6,24 @@
     <description>Recent content in Objective-C on Small Fly</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
-    <lastBuildDate>Sun, 31 May 2020 00:02:44 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 28 Aug 2020 10:51:52 +0800</lastBuildDate>
     
 	<atom:link href="iostalks.github.io/categories/objective-c/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Objective-C Runtime 初始化全过程</title>
+      <link>iostalks.github.io/post/objc-runtime/</link>
+      <pubDate>Fri, 28 Aug 2020 10:51:52 +0800</pubDate>
+      
+      <guid>iostalks.github.io/post/objc-runtime/</guid>
+      <description>&lt;p&gt;Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。&lt;/p&gt;
+&lt;p&gt;这里有一份笔者加过注释的可运行 Runtime 源码：&lt;a href=&#34;https://github.com/iostalks/objc-runtime&#34;&gt;objc-runtime&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;加载类&#34;&gt;加载类&lt;/h2&gt;
+&lt;p&gt;Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。&lt;/p&gt;
+&lt;p&gt;首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。&lt;/p&gt;
+&lt;p&gt;值得关注的是 map_images 和 load_images 这两个函数。&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>再读 《Objective-C 高级编程》内存管理篇</title>

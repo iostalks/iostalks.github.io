@@ -44,7 +44,7 @@
 <meta property="og:description" content="" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="iostalks.github.io/" />
-<meta property="og:updated_time" content="2020-05-31T00:02:44+08:00" />
+<meta property="og:updated_time" content="2020-08-28T10:51:52+08:00" />
 <meta itemprop="name" content="Small Fly">
 <meta itemprop="description" content=""><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Small Fly"/>
@@ -109,6 +109,32 @@
       <div class="content-wrapper">
         <div id="content" class="content">
           <section id="posts" class="posts">
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="iostalks.github.io/post/objc-runtime/">Objective-C Runtime 初始化全过程</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2020-08-28 </span>
+      <div class="post-category">
+          <a href="/iostalks.github.io/categories/objective-c/"> Objective-C </a>
+          </div>
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。</p>
+<p>这里有一份笔者加过注释的可运行 Runtime 源码：<a href="https://github.com/iostalks/objc-runtime">objc-runtime</a></p>
+<h2 id="加载类">加载类</h2>
+<p>Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。</p>
+<p>首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。</p>
+<p>值得关注的是 map_images 和 load_images 这两个函数。</p>
+    </div>
+    <div class="read-more">
+      <a href="iostalks.github.io/post/objc-runtime/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
     <article class="post">
   <header class="post-header">
     <h1 class="post-title"><a class="post-link" href="iostalks.github.io/post/objc-memory-manage/">再读 《Objective-C 高级编程》内存管理篇</a></h1>
@@ -205,33 +231,14 @@
   </div>
 </article>
 
-    <article class="post">
-  <header class="post-header">
-    <h1 class="post-title"><a class="post-link" href="iostalks.github.io/post/js-drawback/">JavaScript 糟粕集</a></h1>
-    <div class="post-meta">
-      <span class="post-time"> 2020-01-10 </span>
-      <div class="post-category">
-          <a href="/iostalks.github.io/categories/javascript/"> JavaScript </a>
-          </div>
-    </div>
-  </header>
-  
-  <div class="post-content">
-    <div class="post-summary">
-      <p>JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。</p>
-<p>虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。</p>
-    </div>
-    <div class="read-more">
-      <a href="iostalks.github.io/post/js-drawback/" class="read-more-link">Read more...</a>
-    </div>
-  </div>
-</article>
-
     </section>
   
   <nav class="pagination">
     
-    
+    <a class="next" href="iostalks.github.io/page/2/">
+        <span class="next-text">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
   </nav>
         </div>
         
