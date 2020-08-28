@@ -1,99 +1,99 @@
-<?xml-stylesheet type="text/xsl" href="iostalks.github.io/sitemap.xsl"?>
+<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>iostalks.github.io/categories/</loc>
+    <loc>/categories/</loc>
     <lastmod>2020-08-28T10:51:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/categories/objective-c/</loc>
+    <loc>/categories/objective-c/</loc>
     <lastmod>2020-08-28T10:51:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/objc-runtime/</loc>
+    <loc>/post/objc-runtime/</loc>
     <lastmod>2020-08-28T10:51:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/</loc>
+    <loc>/post/</loc>
     <lastmod>2020-08-28T10:51:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/</loc>
+    <loc>/</loc>
     <lastmod>2020-08-28T10:51:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/objc-memory-manage/</loc>
+    <loc>/post/objc-memory-manage/</loc>
     <lastmod>2020-05-31T00:02:44+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/http-cache/</loc>
+    <loc>/post/http-cache/</loc>
     <lastmod>2020-04-14T08:14:53+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/</loc>
+    <loc>/categories/%E7%BD%91%E7%BB%9C/</loc>
     <lastmod>2020-04-14T08:14:53+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/kills-cors-doubt/</loc>
+    <loc>/post/kills-cors-doubt/</loc>
     <lastmod>2020-03-17T10:01:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/categories/%E5%89%8D%E7%AB%AF/</loc>
+    <loc>/categories/%E5%89%8D%E7%AB%AF/</loc>
     <lastmod>2020-03-17T10:01:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/categories/javascript/</loc>
+    <loc>/categories/javascript/</loc>
     <lastmod>2020-02-09T14:45:39+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/js-object-toprimitive/</loc>
+    <loc>/post/js-object-toprimitive/</loc>
     <lastmod>2020-02-09T14:45:39+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/post/js-drawback/</loc>
+    <loc>/post/js-drawback/</loc>
     <lastmod>2020-01-10T17:24:00+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>iostalks.github.io/tags/</loc>
+    <loc>/tags/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>

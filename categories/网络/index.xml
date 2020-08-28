@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>网络 on Small Fly</title>
-    <link>iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/</link>
+    <link>/categories/%E7%BD%91%E7%BB%9C/</link>
     <description>Recent content in 网络 on Small Fly</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
     <lastBuildDate>Tue, 14 Apr 2020 08:14:53 +0800</lastBuildDate>
     
-	<atom:link href="iostalks.github.io/categories/%E7%BD%91%E7%BB%9C/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/categories/%E7%BD%91%E7%BB%9C/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>HTTP 客户端缓存的实现原理</title>
-      <link>iostalks.github.io/post/http-cache/</link>
+      <link>/post/http-cache/</link>
       <pubDate>Tue, 14 Apr 2020 08:14:53 +0800</pubDate>
       
-      <guid>iostalks.github.io/post/http-cache/</guid>
+      <guid>/post/http-cache/</guid>
       <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;
 &lt;p&gt;HTTP 是一种同步的应用层协议，客户端在发出请求后，需要等待服务端的响应，在这个过程中，请求是阻塞的。&lt;/p&gt;
 &lt;p&gt;在端上响应时间是应用程序关键的性能指标，因此 HTTP 的响应速度，对提升应用程序的性能非常关键。&lt;/p&gt;

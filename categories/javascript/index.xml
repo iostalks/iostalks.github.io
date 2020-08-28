@@ -2,31 +2,31 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>JavaScript on Small Fly</title>
-    <link>iostalks.github.io/categories/javascript/</link>
+    <link>/categories/javascript/</link>
     <description>Recent content in JavaScript on Small Fly</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
     <lastBuildDate>Sun, 09 Feb 2020 14:45:39 +0800</lastBuildDate>
     
-	<atom:link href="iostalks.github.io/categories/javascript/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/categories/javascript/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>JavaScript 对象转值的原理</title>
-      <link>iostalks.github.io/post/js-object-toprimitive/</link>
+      <link>/post/js-object-toprimitive/</link>
       <pubDate>Sun, 09 Feb 2020 14:45:39 +0800</pubDate>
       
-      <guid>iostalks.github.io/post/js-object-toprimitive/</guid>
+      <guid>/post/js-object-toprimitive/</guid>
       <description>&lt;p&gt;JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;[] + []&lt;/code&gt; , &lt;code&gt;[] + {}&lt;/code&gt; , &lt;code&gt;${obj}&lt;/code&gt; ，这些表达式计算结果是什么，又是如何得出这个结果的？&lt;/p&gt;</description>
     </item>
     
     <item>
       <title>JavaScript 糟粕集</title>
-      <link>iostalks.github.io/post/js-drawback/</link>
+      <link>/post/js-drawback/</link>
       <pubDate>Fri, 10 Jan 2020 17:24:00 +0800</pubDate>
       
-      <guid>iostalks.github.io/post/js-drawback/</guid>
+      <guid>/post/js-drawback/</guid>
       <description>&lt;p&gt;JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。&lt;/p&gt;
 &lt;p&gt;虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。&lt;/p&gt;</description>
     </item>

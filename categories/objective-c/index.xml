@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Objective-C on Small Fly</title>
-    <link>iostalks.github.io/categories/objective-c/</link>
+    <link>/categories/objective-c/</link>
     <description>Recent content in Objective-C on Small Fly</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
     <lastBuildDate>Fri, 28 Aug 2020 10:51:52 +0800</lastBuildDate>
     
-	<atom:link href="iostalks.github.io/categories/objective-c/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/categories/objective-c/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Objective-C Runtime 初始化全过程</title>
-      <link>iostalks.github.io/post/objc-runtime/</link>
+      <link>/post/objc-runtime/</link>
       <pubDate>Fri, 28 Aug 2020 10:51:52 +0800</pubDate>
       
-      <guid>iostalks.github.io/post/objc-runtime/</guid>
+      <guid>/post/objc-runtime/</guid>
       <description>&lt;p&gt;Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。&lt;/p&gt;
 &lt;p&gt;这里有一份笔者加过注释的可运行 Runtime 源码：&lt;a href=&#34;https://github.com/iostalks/objc-runtime&#34;&gt;objc-runtime&lt;/a&gt;&lt;/p&gt;
 &lt;h2 id=&#34;加载类&#34;&gt;加载类&lt;/h2&gt;
@@ -27,10 +27,10 @@
     
     <item>
       <title>再读 《Objective-C 高级编程》内存管理篇</title>
-      <link>iostalks.github.io/post/objc-memory-manage/</link>
+      <link>/post/objc-memory-manage/</link>
       <pubDate>Sun, 31 May 2020 00:02:44 +0800</pubDate>
       
-      <guid>iostalks.github.io/post/objc-memory-manage/</guid>
+      <guid>/post/objc-memory-manage/</guid>
       <description>&lt;p&gt;以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。&lt;/p&gt;
 &lt;p&gt;原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。&lt;/p&gt;
 &lt;p&gt;全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。&lt;/p&gt;
