@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="Smallfly ">
+<meta name="description" content="Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。
+这里有一份笔者加过注释的可运行 Runtime 源码：objc-runtime
+加载类 Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。
+首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。
+值得关注的是 map_images 和 load_images 这两个函数。
+" />
+<meta name="keywords" content="homepage, blog" />
+<meta name="robots" content="noodp" />
+<meta name="theme-color" content="" />
+<link rel="canonical" href="/posts/objc-runtime/" />
+
+
+    <title>
+        
+            Objective-C Runtime 初始化全过程 :: Smallfly Blog 
+        
+    </title>
+
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css" rel="stylesheet"
+    type="text/css">
+
+
+
+<link rel="stylesheet" href="/main.393856bf2c430bb6c01d7af07c6fe966e7cce8073435cfbbc46e590bab7405ef.css">
+
+
+
+
+
+
+<meta itemprop="name" content="Objective-C Runtime 初始化全过程">
+<meta itemprop="description" content="Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。
+这里有一份笔者加过注释的可运行 Runtime 源码：objc-runtime
+加载类
+Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。
+首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。
+值得关注的是 map_images 和 load_images 这两个函数。">
+<meta itemprop="datePublished" content="2020-08-28T10:51:52&#43;08:00" />
+<meta itemprop="dateModified" content="2020-08-28T10:51:52&#43;08:00" />
+<meta itemprop="wordCount" content="2048">
+<meta itemprop="image" content=""/>
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content=""/>
+
+<meta name="twitter:title" content="Objective-C Runtime 初始化全过程"/>
+<meta name="twitter:description" content="Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。
+这里有一份笔者加过注释的可运行 Runtime 源码：objc-runtime
+加载类
+Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。
+首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。
+值得关注的是 map_images 和 load_images 这两个函数。"/>
+
+
+
+    <meta property="og:title" content="Objective-C Runtime 初始化全过程" />
+<meta property="og:description" content="Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。
+这里有一份笔者加过注释的可运行 Runtime 源码：objc-runtime
+加载类
+Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。
+首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。
+值得关注的是 map_images 和 load_images 这两个函数。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/posts/objc-runtime/" />
+<meta property="og:image" content=""/>
+<meta property="article:published_time" content="2020-08-28T10:51:52+08:00" />
+<meta property="article:modified_time" content="2020-08-28T10:51:52+08:00" />
+
+
+
+
+    <meta property="article:section" content="Objective-C" />
+
+
+
+    <meta property="article:published_time" content="2020-08-28 10:51:52 &#43;0800 CST" />
+
+
+
+
+
+
+
+
+    </head>
+
+    <body class="dark-theme">
+        <div class="container">
+            <header class="header">
+    <span class="header__inner">
+        <a href="/" style="text-decoration: none;">
+    <div class="logo">
+        
+            <span class="logo__mark">></span>
+            <span class="logo__text">hello</span>
+            <span class="logo__cursor" style=
+                  "
+                   
+                   ">
+            </span>
+        
+    </div>
+</a>
+
+
+        <span class="header__right">
+            
+                <nav class="menu">
+    <ul class="menu__inner"><li><a href="/">Home</a></li><li><a href="/posts">Archives</a></li><li><a href="/tags">Tags</a></li>
+    </ul>
+</nav>
+
+                <span class="menu-trigger">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    </svg>
+                </span>
+            
+
+            <span class="theme-toggle unselectable"><svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+</span>
+        </span>
+    </span>
+</header>
+
+
+            <div class="content">
+                
+  <main class="post">
+
+    <div class="post-info">
+      <p>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        5 minutes
+
+        
+      </p>
+    </div>
+
+    <article>
+      <h1 class="post-title">
+        <a href="/posts/objc-runtime/">Objective-C Runtime 初始化全过程</a>
+      </h1>
+
+      
+
+      <div class="post-content">
+        <p>Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。</p>
+<p>这里有一份笔者加过注释的可运行 Runtime 源码：<a href="https://github.com/iostalks/objc-runtime">objc-runtime</a></p>
+<h2 id="加载类">加载类</h2>
+<p>Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。</p>
+<p>首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。</p>
+<p>值得关注的是 map_images 和 load_images 这两个函数。</p>
+<p>map_images 和 load_images 是注册到 dyld 的两个监听回调。这里的 image 表示应用程序或者它依赖的动态库镜像。</p>
+<p>map_images 回调时，携带所有镜像信息，用于查找包含 ObjC 的相关信息。</p>
+<p>它在加锁后，内部进一步调用 map_images_nolock 函数，以链表的形式记录所有的 image Header，并执行 _read_images。</p>
+<p>_read_images 会遍历每个 image 并加载其中和 ObjC 相关的信息。包括选择子，协议，分类，类，分别存入哈希表中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">-</span> <span class="err">_</span><span class="err">o</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="err">_</span><span class="err">i</span><span class="err">n</span><span class="err">i</span><span class="err">t</span>
+  <span class="err">-</span> <span class="err">_</span><span class="err">d</span><span class="err">y</span><span class="err">l</span><span class="err">d</span><span class="err">_</span><span class="err">o</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="err">_</span><span class="err">n</span><span class="err">o</span><span class="err">t</span><span class="err">i</span><span class="err">f</span><span class="err">y</span><span class="err">_</span><span class="err">r</span><span class="err">e</span><span class="err">g</span><span class="err">i</span><span class="err">s</span><span class="err">t</span><span class="err">e</span><span class="err">r</span>
+    <span class="err">-</span> <span class="err">m</span><span class="err">a</span><span class="err">p</span><span class="err">_</span><span class="err">i</span><span class="err">m</span><span class="err">a</span><span class="err">g</span><span class="err">e</span><span class="err">s</span>
+      <span class="err">-</span> <span class="err">m</span><span class="err">a</span><span class="err">p</span><span class="err">_</span><span class="err">i</span><span class="err">m</span><span class="err">a</span><span class="err">g</span><span class="err">e</span><span class="err">s</span><span class="err">_</span><span class="err">n</span><span class="err">o</span><span class="err">l</span><span class="err">o</span><span class="err">c</span><span class="err">k</span>
+        <span class="err">-</span> <span class="err">_</span><span class="err">r</span><span class="err">e</span><span class="err">a</span><span class="err">d</span><span class="err">_</span><span class="err">i</span><span class="err">m</span><span class="err">a</span><span class="err">g</span><span class="err">e</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">S</span><span class="err">e</span><span class="err">l</span><span class="err">e</span><span class="err">c</span><span class="err">t</span><span class="err">o</span><span class="err">r</span><span class="err">R</span><span class="err">e</span><span class="err">f</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">C</span><span class="err">l</span><span class="err">a</span><span class="err">s</span><span class="err">s</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">C</span><span class="err">l</span><span class="err">a</span><span class="err">s</span><span class="err">s</span><span class="err">R</span><span class="err">e</span><span class="err">f</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">P</span><span class="err">r</span><span class="err">o</span><span class="err">t</span><span class="err">o</span><span class="err">c</span><span class="err">o</span><span class="err">l</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">P</span><span class="err">r</span><span class="err">o</span><span class="err">t</span><span class="err">o</span><span class="err">c</span><span class="err">o</span><span class="err">l</span><span class="err">R</span><span class="err">e</span><span class="err">f</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">C</span><span class="err">a</span><span class="err">t</span><span class="err">e</span><span class="err">g</span><span class="err">o</span><span class="err">r</span><span class="err">y</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">N</span><span class="err">o</span><span class="err">n</span><span class="err">l</span><span class="err">a</span><span class="err">z</span><span class="err">y</span><span class="err">C</span><span class="err">l</span><span class="err">a</span><span class="err">s</span><span class="err">s</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>_read_images 函数比较长，但处理过程都是相似的。从 image 也就是 macho 文件加载 ObjC 相关信息。</p>
+<p>值得一说的是加载 Class 的过程，Class 的加载分为 Non-Lazy 和 Lazy 两种形式，有什么区别呢？</p>
+<p>实现 +load 方法的类，在编译时都会被加入到 Non-Lazy Section。</p>
+<p>从 mach-o 文件加载的 Class 是不能向它发消息的，要进一步的结构化，也就是 realize。而对于 Lazy Class 延迟到它收到第一条 message 时，才进行 realize。</p>
+<h2 id="格式化类">格式化类</h2>
+<p><code>realizeClassWithoutSwift(Class cls, Class previously)</code> 描述了格式化类的过程。 Class 实际上就是 objc_class 结构体指针。
+它的关键结构如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">objc_class</span> <span class="p">{</span>
+  <span class="n">Class</span> <span class="n">isa</span>
+  <span class="n">Class</span> <span class="n">superclass</span>
+  <span class="n">cache_t</span> <span class="n">cache</span>
+  <span class="n">class_data_bits_t</span> <span class="n">bits</span>
+<span class="p">}</span>
+
+<span class="k">struct</span> <span class="nc">class_data_bits_t</span> <span class="p">{</span>
+  <span class="n">uintptr_t</span> <span class="n">bits</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>class_data_bits_t 结构体只有一个 bits 字段，它不是单纯的指针，得从比特位的角度进行细分。在 x86_64 架构下，bits 与 FAST_DATA_MASK 位掩码的结果表示 class_ro_t 结构体指针，格式化后会用 class_rw_t 指针覆盖。</p>
+<p>ro = (const class_ro_t <em>)cls-&gt;data(); // (bits &amp; FAST_DATA_MASK); 3~47 bit
+rw = (class_rw_t</em>)calloc(sizeof(class_rw_t), 1);
+rw-&gt;ro = ro;
+rw-&gt;flags = RW_REALIZED|RW_REALIZING;
+cls-&gt;setData(rw); // 覆盖 ro</p>
+<p>class_ro_t 表示编译期确定的类信息，包括实例变量，属性，方法，协议等。而运行期动态添加的信息，会被添加到 class_rw_t 结构体中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// 运行期动态创建结构
+</span><span class="c1"></span><span class="k">struct</span> <span class="nc">class_rw_t</span> <span class="p">{</span>
+  <span class="c1">// … 省略若干字段
+</span><span class="c1"></span>  <span class="k">const</span> <span class="n">class_ro_t</span> <span class="o">*</span><span class="n">ro</span><span class="p">;</span>
+
+  <span class="n">method_array_t</span> <span class="n">methods</span><span class="p">;</span>
+  <span class="n">property_array_t</span> <span class="n">properties</span><span class="p">;</span>
+  <span class="n">protocol_array_t</span> <span class="n">protocols</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 编译期确定结构
+</span><span class="c1"></span><span class="k">struct</span> <span class="nc">class_ro_t</span> <span class="p">{</span>
+  <span class="c1">// … 省略若干字段
+</span><span class="c1"></span>  <span class="n">method_list_t</span> <span class="o">*</span><span class="n">baseMethodList</span><span class="p">;</span>
+  <span class="n">protocol_list_t</span> <span class="o">*</span><span class="n">baseProtocols</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">ivar_list_t</span> <span class="o">*</span><span class="n">ivars</span><span class="p">;</span>
+  <span class="n">property_list_t</span> <span class="o">*</span><span class="n">baseProperties</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>结构化过程会递归调用，确保祖先类已经 realize，同时记录父类和元类的指针关系。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">static</span> <span class="n">Class</span> <span class="nf">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="n">Class</span> <span class="n">previously</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// 调整 class_rw_t / class_ro_t 指向
+</span><span class="c1"></span>  <span class="n">ro</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="n">class_ro_t</span> <span class="o">*</span><span class="p">)</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">data</span><span class="p">(</span><span class="p">)</span><span class="p">;</span> <span class="c1">// (bits &amp; FAST_DATA_MASK); // 3~47 bit
+</span><span class="c1"></span>  <span class="n">rw</span> <span class="o">=</span> <span class="p">(</span><span class="n">class_rw_t</span><span class="o">*</span><span class="p">)</span><span class="n">calloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">class_rw_t</span><span class="p">)</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span>
+  <span class="n">rw</span><span class="o">-</span><span class="o">&gt;</span><span class="n">ro</span> <span class="o">=</span> <span class="n">ro</span><span class="p">;</span>
+  <span class="n">rw</span><span class="o">-</span><span class="o">&gt;</span><span class="n">flags</span> <span class="o">=</span> <span class="n">RW_REALIZED</span><span class="o">|</span><span class="n">RW_REALIZING</span><span class="p">;</span>
+  <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">setData</span><span class="p">(</span><span class="n">rw</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">supercls</span> <span class="o">=</span> <span class="n">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">remapClass</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">superclass</span><span class="p">)</span><span class="p">,</span> <span class="n">nil</span><span class="p">)</span><span class="p">;</span>
+  <span class="n">metacls</span> <span class="o">=</span> <span class="n">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">remapClass</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">ISA</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="n">nil</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">superclass</span> <span class="o">=</span> <span class="n">supercls</span><span class="p">;</span>
+  <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">initClassIsa</span><span class="p">(</span><span class="n">metacls</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="c1">// Attach categories
+</span><span class="c1"></span>  <span class="n">methodizeClass</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">previously</span><span class="p">)</span><span class="p">;</span>
+  
+  <span class="k">return</span> <span class="k">class</span>
+<span class="err">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Class 相关的信息 realize 后，还要对其方法进行 methodize 调整。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">static</span> <span class="kt">void</span> <span class="n">methodizeClass</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="n">Class</span> <span class="n">previously</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Class 参数可以是类或者元类。</p>
+<p>这个函数的功能分为两部分：</p>
+<ol>
+<li>将 ro 结构体中的属性、方法、协议，添加到 rw 结构体。</li>
+<li>将 cls 所有的 category 中的属性、方法、协议，添加到 rw 结构体。</li>
+</ol>
+<p>属性，方法，协议列表存储在结构相同的数组中。</p>
+<p>以方法为例，method_array_t&lt;method_list_t&gt; 数组，元素类型为 method_list_t，表示方法列表，先添加主类中的 method list，随后添加各 Category method list，后面添加的 list 会被插入到 array 的前面。</p>
+<p>在方法查找时，如果没有缓存，会从前往后遍历方法，找到后立即返回，因此 Category 中如果和主类有同名的方法，就会覆盖主类的实现。</p>
+<p>因为方法的结构是一个二维数组，在方法查找时，理论上遍历的时间复杂度是 O(n^2)。</p>
+<p>在添加方法时，会进行修正优化，根据方法 sel 字符串进行排序。因此在外层线性查找，内层以排序的方法名，采用二分查找。</p>
+<p>同时，会对找到的方法 IMP 进行缓存。</p>
+<h2 id="调用-load">调用 load</h2>
+<p>image map 完成后，load_images 会逐个被调用，并传入当前 image 的 path 和 macho header。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">void</span>
+<span class="nf">load_images</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span> <span class="n">__unused</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="nc">mach_header</span><span class="o">*</span><span class="n">mh</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">prepare_load_methods</span><span class="p">(</span><span class="p">(</span><span class="k">const</span> <span class="n">headerType</span> <span class="o">*</span><span class="p">)</span><span class="n">mh</span><span class="p">)</span><span class="p">;</span>
+  <span class="n">call_load_methods</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>上面简化版的 load_images 函数，主要做两件事情：</p>
+<ol>
+<li>收集实现 load 方法的 Class/Category</li>
+<li>调用 load 方法</li>
+</ol>
+<p>收集 load 方法的函数 prepare_load_methods，主要做两件事情：</p>
+<ol>
+<li>收集实现 load 方法的 non lazy class，添加到 loadable_classes</li>
+<li>收集实现 load 方法的 non lazy category，添加到 loadable_categories</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">void</span> <span class="nf">prepare_load_methods</span><span class="p">(</span><span class="k">const</span> <span class="n">headerType</span> <span class="o">*</span><span class="n">mhdr</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">size_t</span> <span class="n">count</span><span class="p">,</span> <span class="n">i</span><span class="p">;</span>
+
+    <span class="n">runtimeLock</span><span class="p">.</span><span class="n">assertLocked</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="c1">// 从 non lazy section 读取 class
+</span><span class="c1"></span>    <span class="n">classref_t</span> <span class="k">const</span> <span class="o">*</span><span class="n">classlist</span> <span class="o">=</span> <span class="n">_getObjc2NonlazyClassList</span><span class="p">(</span><span class="n">mhdr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">count</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">+</span><span class="o">+</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">schedule_class_load</span><span class="p">(</span><span class="n">remapClass</span><span class="p">(</span><span class="n">classlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">category_t</span> <span class="o">*</span> <span class="k">const</span> <span class="o">*</span><span class="n">categorylist</span> <span class="o">=</span> <span class="n">_getObjc2NonlazyCategoryList</span><span class="p">(</span><span class="n">mhdr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">count</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">+</span><span class="o">+</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">category_t</span> <span class="o">*</span><span class="n">cat</span> <span class="o">=</span> <span class="n">categorylist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">;</span>
+        <span class="n">Class</span> <span class="n">cls</span> <span class="o">=</span> <span class="n">remapClass</span><span class="p">(</span><span class="n">cat</span><span class="o">-</span><span class="o">&gt;</span><span class="n">cls</span><span class="p">)</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cls</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>  <span class="c1">// category for ignored weak-linked class
+</span><span class="c1"></span>        <span class="n">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">nil</span><span class="p">)</span><span class="p">;</span>
+        <span class="n">add_category_to_loadable_list</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在编译时，macho 文件 __objc_nlclslist section，包含所有实现 load 方法的 class，会添加到 loadable_class 数组，数组的元素是一个结构体，包含 class 和 load 函数的地址。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">static</span> <span class="kt">void</span> <span class="nf">schedule_class_load</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cls</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    <span class="n">ASSERT</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">isRealized</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>  <span class="c1">// 确保已经格式化完成
+</span><span class="c1"></span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">data</span><span class="p">(</span><span class="p">)</span><span class="o">-</span><span class="o">&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">RW_LOADED</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="c1">// 确保父类的 load 方法先被添加
+</span><span class="c1"></span>    <span class="n">schedule_class_load</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">superclass</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="c1">// 添加到 list
+</span><span class="c1"></span>    <span class="n">add_class_to_loadable_list</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="c1">// 标记已经 load
+</span><span class="c1"></span>    <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">setInfo</span><span class="p">(</span><span class="n">RW_LOADED</span><span class="p">)</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">add_class_to_loadable_list</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">IMP</span> <span class="n">method</span><span class="p">;</span>
+
+    <span class="n">loadMethodLock</span><span class="p">.</span><span class="n">assertLocked</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="n">method</span> <span class="o">=</span> <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">getLoadMethod</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">method</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="n">loadable_classes</span><span class="p">[</span><span class="n">loadable_classes_used</span><span class="p">]</span><span class="p">.</span><span class="n">cls</span> <span class="o">=</span> <span class="n">cls</span><span class="p">;</span>
+    <span class="n">loadable_classes</span><span class="p">[</span><span class="n">loadable_classes_used</span><span class="p">]</span><span class="p">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="p">;</span>
+    <span class="n">loadable_classes_used</span><span class="o">+</span><span class="o">+</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>add_class_to_loadable_list 方法添加 class 和 load，被添加的 class 需要确保其父类已经添加，添加完成后，向 class_rw_t 的 flags 标记写入 RW_LOADED。</p>
+<p>Category 同理，不过如果 Category 实现 load，对应的 Class 如果没有实现 load，该 category 对应的 class 可能是没有被 realize 的，所以在添加 category 之前，要确保对应的 class 已经 realize。</p>
+<p>收集 load 函数完成后，开始执行 load 方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">void</span> <span class="nf">call_load_methods</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="n">loading</span> <span class="o">=</span> <span class="n">NO</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">more_categories</span><span class="p">;</span>
+
+  <span class="n">loadMethodLock</span><span class="p">.</span><span class="n">assertLocked</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">loading</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+  <span class="n">loading</span> <span class="o">=</span> <span class="n">YES</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="o">*</span><span class="n">pool</span> <span class="o">=</span> <span class="n">objc_autoreleasePoolPush</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">call_class_loads</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">call_category_loads</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">objc_autoreleasePoolPop</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">loading</span> <span class="o">=</span> <span class="n">NO</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>load 的执行需要加锁，并且被自动释放池包裹，调用顺序如下：</p>
+<ol>
+<li>父类 load</li>
+<li>子类 load</li>
+<li>category load</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="p">(</span><span class="o">*</span><span class="n">load_method</span><span class="p">)</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="err">@</span><span class="n">selector</span><span class="p">(</span><span class="n">load</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>load 方法调用不走 objc_msgSend，而是直接调用 load 函数指针。</p>
+<p>所有 image 的 load 方法调用完成后，ObjC Runtime 的初始化过程也就完成了。</p>
+      </div>
+    </article>
+
+    <hr />
+
+    <div class="post-info">
+      
+      
+    <p>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-folder meta-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+
+        <span class="tag"><a href="categories/objective-c/">Objective-C</a></span>
+        
+    </p>
+
+
+      <p>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        2048 Words
+      </p>
+
+      <p>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        
+          2020-08-28 10:51
+        
+
+         
+          
+        
+      </p>
+    </div>
+      <hr />
+      <div class="sharing-buttons">
+        
+<a class="resp-sharing-button__link" href="https://facebook.com/sharer/sharer.php?u=%2fposts%2fobjc-runtime%2f" target="_blank" rel="noopener" aria-label="" title="Share on facebook">
+  <div class="resp-sharing-button resp-sharing-button--facebook resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://twitter.com/intent/tweet/?url=%2fposts%2fobjc-runtime%2f" target="_blank" rel="noopener" aria-label="" title="Share on twitter">
+  <div class="resp-sharing-button resp-sharing-button--twitter resp-sharing-button--small">
+      <div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://www.tumblr.com/widgets/share/tool?posttype=link&amp;title=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b&amp;caption=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b&amp;canonicalUrl=%2fposts%2fobjc-runtime%2f" target="_blank" rel="noopener" aria-label="" title="Share on tumblr">
+  <div class="resp-sharing-button resp-sharing-button--tumblr resp-sharing-button--small">
+    <div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.563 24c-5.093 0-7.031-3.756-7.031-6.411V9.747H5.116V6.648c3.63-1.313 4.512-4.596 4.71-6.469C9.84.051 9.941 0 9.999 0h3.517v6.114h4.801v3.633h-4.82v7.47c.016 1.001.375 2.371 2.207 2.371h.09c.631-.02 1.486-.205 1.936-.419l1.156 3.425c-.436.636-2.4 1.374-4.156 1.404h-.178l.011.002z"/></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="mailto:?subject=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b&amp;body=%2fposts%2fobjc-runtime%2f" target="_self" rel="noopener" aria-label="" title="Share via email">
+  <div class="resp-sharing-button resp-sharing-button--email resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://pinterest.com/pin/create/button/?url=%2fposts%2fobjc-runtime%2f&amp;media=%2fposts%2fobjc-runtime%2f;description=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b" target="_blank" rel="noopener" aria-label="" title="Share on pinterest">
+  <div class="resp-sharing-button resp-sharing-button--pinterest resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"/></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=%2fposts%2fobjc-runtime%2f&amp;title=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b&amp;summary=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b&amp;source=%2fposts%2fobjc-runtime%2f" target="_blank" rel="noopener" aria-label="" title="Share on linkedin">
+  <div class="resp-sharing-button resp-sharing-button--linkedin resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://reddit.com/submit/?url=%2fposts%2fobjc-runtime%2f&amp;resubmit=true&amp;title=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b" target="_blank" rel="noopener" aria-label="" title="Share on reddit">
+  <div class="resp-sharing-button resp-sharing-button--reddit resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://www.xing.com/app/user?op=share;url=%2fposts%2fobjc-runtime%2f;title=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b" target="_blank" rel="noopener" aria-label="" title="Share on xing">
+  <div class="resp-sharing-button resp-sharing-button--xing resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.188 0c-.517 0-.741.325-.927.66 0 0-7.455 13.224-7.702 13.657.015.024 4.919 9.023 4.919 9.023.17.308.436.66.967.66h3.454c.211 0 .375-.078.463-.22.089-.151.089-.346-.009-.536l-4.879-8.916c-.004-.006-.004-.016 0-.022L22.139.756c.095-.191.097-.387.006-.535C22.056.078 21.894 0 21.686 0h-3.498zM3.648 4.74c-.211 0-.385.074-.473.216-.09.149-.078.339.02.531l2.34 4.05c.004.01.004.016 0 .021L1.86 16.051c-.099.188-.093.381 0 .529.085.142.239.234.45.234h3.461c.518 0 .766-.348.945-.667l3.734-6.609-2.378-4.155c-.172-.315-.434-.659-.962-.659H3.648v.016z"/></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="whatsapp://send?text=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b%20%2fposts%2fobjc-runtime%2f" target="_blank" rel="noopener" aria-label="" title="Share on whatsapp">
+  <div class="resp-sharing-button resp-sharing-button--whatsapp resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://news.ycombinator.com/submitlink?u=%2fposts%2fobjc-runtime%2f&amp;t=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b" target="_blank" rel="noopener" aria-label="" title="Share on hacker news">
+  <div class="resp-sharing-button resp-sharing-button--hackernews resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M0 24V0h24v24H0zM6.951 5.896l4.112 7.708v5.064h1.583v-4.972l4.148-7.799h-1.749l-2.457 4.875c-.372.745-.688 1.434-.688 1.434s-.297-.708-.651-1.434L8.831 5.896h-1.88z"/></svg>
+    </div>
+  </div>
+</a>
+
+
+<a class="resp-sharing-button__link" href="https://telegram.me/share/url?text=Objective-C%20Runtime%20%e5%88%9d%e5%a7%8b%e5%8c%96%e5%85%a8%e8%bf%87%e7%a8%8b&amp;url=%2fposts%2fobjc-runtime%2f" target="_blank" rel="noopener" aria-label="" title="Share on telegram">
+  <div class="resp-sharing-button resp-sharing-button--telegram resp-sharing-button--small"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </div>
+  </div>
+</a>
+
+      </div>
+
+    
+      <div class="pagination">
+        <div class="pagination__title">
+          <span class="pagination__title-h"></span>
+          <hr />
+        </div>
+
+        <div class="pagination__buttons">
+          
+            <span class="button previous">
+              <a href="/posts/sdwebimage-memory-cache/">
+                <span class="button__icon">←</span>
+                <span class="button__text">细品 SDWebImage 内存缓存</span>
+              </a>
+            </span>
+          
+
+          
+            <span class="button next">
+              <a href="/posts/objc-memory-manage/">
+                <span class="button__text">再读 《Objective-C 高级编程》内存管理篇</span>
+                <span class="button__icon">→</span>
+              </a>
+            </span>
+          
+        </div>
+      </div>
+    
+
+
+    
+
+  </main>
+
+            </div>
+
+            
+                <footer class="footer">
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>&copy; 2020</span>
+            
+                <span><a href="">Smallfly</a></span>
+            
+            
+                <span>Smallfly</span>
+            <span><a href="posts/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a></span>
+        </div>
+    </div>
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>Powered by <a href="http://gohugo.io">Hugo</a></span>
+            <span>Made with &#10084; by <a href="https://github.com/rhazdon">Djordje Atlialp</a></span>
+          </div>
+    </div>
+</footer>
+
+            
+        </div>
+
+        
+
+
+
+
+<script type="text/javascript" src="/bundle.min.dc716e9092c9820b77f96da294d0120aeeb189b5bcea9752309ebea27fd53bbe6b13cffb2aca8ecf32525647ceb7001f76091de4199ac5a3caa432c070247f5b.js" integrity="sha512-3HFukJLJggt3&#43;W2ilNASCu6xibW86pdSMJ6&#43;on/VO75rE8/7KsqOzzJSVkfOtwAfdgkd5BmaxaPKpDLAcCR/Ww=="></script>
+
+
+
+    </body>
+</html>

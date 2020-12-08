@@ -1,0 +1,1158 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Posts on Smallfly Blog</title>
+        <link>/posts/</link>
+        <description>Recent content in Posts on Smallfly Blog</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <copyright>Smallfly</copyright>
+        <lastBuildDate>Sat, 05 Dec 2020 09:22:10 +0800</lastBuildDate>
+        <atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
+        
+        <item>
+            <title>细品 SDWebImage 内存缓存</title>
+            <link>/posts/sdwebimage-memory-cache/</link>
+            <pubDate>Sat, 05 Dec 2020 09:22:10 +0800</pubDate>
+            
+            <guid>/posts/sdwebimage-memory-cache/</guid>
+            <description>本文对应 SDWebImage 源码版本 v5.10.0。 NSCache NSCache 是苹果系统提供的内存缓存框架，它类似于 NSMutableDictionary 的 Key-Value 形式，强引用存储的 value 对象。 不同的是，NSCache 会根据设</description>
+            <content type="html"><![CDATA[<blockquote>
+<p>本文对应 SDWebImage 源码版本 v5.10.0。</p>
+</blockquote>
+<h1 id="nscache">NSCache</h1>
+<p>NSCache 是苹果系统提供的内存缓存框架，它类似于 NSMutableDictionary 的 Key-Value 形式，强引用存储的 value 对象。</p>
+<p>不同的是，NSCache 会根据设定条件，或者当前系统的内存剩余情况，选择性地释放缓存对象的引用。</p>
+<p>SDWebImage 使用的缓存类 SDMemoryCache 继承自 NSCache，并再此基础上做了一些优化工作。</p>
+<h2 id="优点">优点</h2>
+<p>相比 NSMutableDictionary，NSCache 的 Key 不需要实现 NSCopying 协议，使用起来更加方便，能把任何（类）对象作为 Key。</p>
+<p>setObject:forKey:cost: 方法提供 cost 参数，统计对象的内存占用，当达到 totalCostLimit 时会削减缓存对象。</p>
+<p>countLimit 提供限制缓存对象的数量，达到阈值也会触发缓存清理，用于图片缓存一般情况下不会对数量做限制。</p>
+<p>NSCache 的访问线程安全。</p>
+<h2 id="缺点">缺点</h2>
+<p>NSCache key 不需要实现 NSCopying 协议，是使用指针来判等的，如果用可变对象作为 key，对象在无意间被修改并释放，就不能再从中读取到缓存对象了。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-objC" data-lang="objC"><span class="n">NSMutableString</span> <span class="o">*</span><span class="n">key</span><span class="p">;</span>
+<span class="p">{</span>
+	<span class="n">key</span> <span class="o">=</span> <span class="p">[</span><span class="s">@&#34;</span><span class="s">foo</span><span class="s">&#34;</span> <span class="n">mutableCopy</span><span class="p">]</span><span class="p">;</span>
+	<span class="kt">id</span> <span class="n">someObj</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSObject</span> <span class="n">new</span><span class="p">]</span><span class="p">;</span>
+	<span class="p">[</span><span class="n">cache</span> <span class="nl">setObject</span><span class="p">:</span><span class="n">someObj</span> <span class="nl">forKey</span><span class="p">:</span><span class="n">key</span><span class="p">]</span><span class="p">;</span>
+	<span class="c1">// key modified
+</span><span class="c1"></span>	<span class="p">[</span><span class="n">key</span> <span class="nl">appendString</span><span class="p">:</span><span class="s">@&#34;</span><span class="s">bar</span><span class="s">&#34;</span><span class="p">]</span><span class="p">;</span>
+	<span class="p">[</span><span class="n">cache</span> <span class="nl">objectForKey</span><span class="p">:</span><span class="n">key</span><span class="p">]</span><span class="p">;</span> <span class="c1">// someObj;
+</span><span class="c1"></span>
+	<span class="n">key</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span> <span class="c1">// key released
+</span><span class="c1"></span>	<span class="p">[</span><span class="n">cache</span> <span class="nl">objectForKey</span><span class="p">:</span><span class="n">key</span><span class="p">]</span><span class="p">;</span> <span class="c1">// nil
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="p">{</span>
+	<span class="c1">// alloc a new key with same value
+</span><span class="c1"></span>	<span class="n">key</span> <span class="o">=</span> <span class="p">[</span><span class="s">@&#34;</span><span class="s">foo</span><span class="s">&#34;</span> <span class="n">mutableCopy</span><span class="p">]</span><span class="p">;</span>
+	<span class="p">[</span><span class="n">cache</span> <span class="nl">objectForKey</span><span class="p">:</span> <span class="n">key</span><span class="p">]</span><span class="p">;</span> <span class="c1">// nil
+</span><span class="c1"></span>
+	<span class="p">[</span><span class="n">key</span> <span class="nl">appendString</span><span class="p">:</span><span class="s">@&#34;</span><span class="s">bar</span><span class="s">&#34;</span><span class="p">]</span><span class="p">;</span>
+	<span class="p">[</span><span class="n">cache</span> <span class="nl">objectForKey</span><span class="p">:</span> <span class="n">key</span><span class="p">]</span><span class="p">;</span> <span class="c1">// nil
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>key 对象被释放后，使用相同的内容重新初始化，也无法再访问的缓存对象。这会导致用户在使用上存在心智负担，需刻意的维护 key 的生命周期。</p>
+<p>SDMemoryCache 利用 weak-strong NSMapTable 解决了这个问题。</p>
+<h1 id="weak-maptable">Weak MapTable</h1>
+<p>SDMemoryCache 内部使用一个 weak-strong 的 NSMapTable 来二次维护缓存对象，它有两个作用：</p>
+<ol>
+<li>解决 NSCache key 意外释放的问题；</li>
+<li>持有缓存对象的弱引用。NSCache 的缓存清理时机不可控，如果有 ImageView 正在使用已缓存的网络图片被清理了，当另外一个 ImageView 实例同样使用 URL 设置图片时，会触发重新下载的。弱引用实现了不同 ImageView 复用同一个 Image。</li>
+</ol>
+<h2 id="其他">其他</h2>
+<h3 id="os_unfair_lock"><code>os_unfair_lock</code></h3>
+<p><code>os_unfair_lock</code> 用于保证 NSMapTable 的线程安全。相比互斥锁，它更加轻量，性能相对更好一些，但在某些场景下存在缺点。可参考<a href="https://www.mikeash.com/pyblog/friday-qa-2017-10-27-locks-thread-safety-and-swift-2017-edition.html">这篇文章</a>。</p>
+<h3 id="delegate"><code>delegate</code></h3>
+<p>NSCache delegate 使用的是<code>assign</code>修饰，释放后不会自动置为 nil，因此在 deinit 中手动 nil 处理。</p>
+<h3 id="memory-warning">Memory Warning</h3>
+<p>NSCache 缓存清理策略未知，系统会根据当前的内存使用情况智能清理，不确定收到内存警告时，是否会清理，SDMemoryCache 手动进行了处理。</p>
+<h1 id="总结">总结</h1>
+<p>SDMemoryCache 利用了 NSCache 的缓存管理，同时又解决了它存在的一些缺陷，除了达到阈值时缓存清理不及时以外，算是一种比较优秀的缓存方案。</p>
+]]></content>
+        </item>
+        
+        <item>
+            <title>Objective-C Runtime 初始化全过程</title>
+            <link>/posts/objc-runtime/</link>
+            <pubDate>Fri, 28 Aug 2020 10:51:52 +0800</pubDate>
+            
+            <guid>/posts/objc-runtime/</guid>
+            <description>&lt;p&gt;Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。&lt;/p&gt;
+&lt;p&gt;这里有一份笔者加过注释的可运行 Runtime 源码：&lt;a href=&#34;https://github.com/iostalks/objc-runtime&#34;&gt;objc-runtime&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;加载类&#34;&gt;加载类&lt;/h2&gt;
+&lt;p&gt;Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。&lt;/p&gt;
+&lt;p&gt;首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。&lt;/p&gt;
+&lt;p&gt;值得关注的是 map_images 和 load_images 这两个函数。&lt;/p&gt;</description>
+            <content type="html"><![CDATA[<p>Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。</p>
+<p>这里有一份笔者加过注释的可运行 Runtime 源码：<a href="https://github.com/iostalks/objc-runtime">objc-runtime</a></p>
+<h2 id="加载类">加载类</h2>
+<p>Runtime 初始化的入口为 objc-os.mm 中的 _objc_init 函数。</p>
+<p>首先是初始化运行环境所需要的资源，随后调用 _dyld_objc_notify_register 注册三个回调函数。</p>
+<p>值得关注的是 map_images 和 load_images 这两个函数。</p>
+<p>map_images 和 load_images 是注册到 dyld 的两个监听回调。这里的 image 表示应用程序或者它依赖的动态库镜像。</p>
+<p>map_images 回调时，携带所有镜像信息，用于查找包含 ObjC 的相关信息。</p>
+<p>它在加锁后，内部进一步调用 map_images_nolock 函数，以链表的形式记录所有的 image Header，并执行 _read_images。</p>
+<p>_read_images 会遍历每个 image 并加载其中和 ObjC 相关的信息。包括选择子，协议，分类，类，分别存入哈希表中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">-</span> <span class="err">_</span><span class="err">o</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="err">_</span><span class="err">i</span><span class="err">n</span><span class="err">i</span><span class="err">t</span>
+  <span class="err">-</span> <span class="err">_</span><span class="err">d</span><span class="err">y</span><span class="err">l</span><span class="err">d</span><span class="err">_</span><span class="err">o</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="err">_</span><span class="err">n</span><span class="err">o</span><span class="err">t</span><span class="err">i</span><span class="err">f</span><span class="err">y</span><span class="err">_</span><span class="err">r</span><span class="err">e</span><span class="err">g</span><span class="err">i</span><span class="err">s</span><span class="err">t</span><span class="err">e</span><span class="err">r</span>
+    <span class="err">-</span> <span class="err">m</span><span class="err">a</span><span class="err">p</span><span class="err">_</span><span class="err">i</span><span class="err">m</span><span class="err">a</span><span class="err">g</span><span class="err">e</span><span class="err">s</span>
+      <span class="err">-</span> <span class="err">m</span><span class="err">a</span><span class="err">p</span><span class="err">_</span><span class="err">i</span><span class="err">m</span><span class="err">a</span><span class="err">g</span><span class="err">e</span><span class="err">s</span><span class="err">_</span><span class="err">n</span><span class="err">o</span><span class="err">l</span><span class="err">o</span><span class="err">c</span><span class="err">k</span>
+        <span class="err">-</span> <span class="err">_</span><span class="err">r</span><span class="err">e</span><span class="err">a</span><span class="err">d</span><span class="err">_</span><span class="err">i</span><span class="err">m</span><span class="err">a</span><span class="err">g</span><span class="err">e</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">S</span><span class="err">e</span><span class="err">l</span><span class="err">e</span><span class="err">c</span><span class="err">t</span><span class="err">o</span><span class="err">r</span><span class="err">R</span><span class="err">e</span><span class="err">f</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">C</span><span class="err">l</span><span class="err">a</span><span class="err">s</span><span class="err">s</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">C</span><span class="err">l</span><span class="err">a</span><span class="err">s</span><span class="err">s</span><span class="err">R</span><span class="err">e</span><span class="err">f</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">P</span><span class="err">r</span><span class="err">o</span><span class="err">t</span><span class="err">o</span><span class="err">c</span><span class="err">o</span><span class="err">l</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">P</span><span class="err">r</span><span class="err">o</span><span class="err">t</span><span class="err">o</span><span class="err">c</span><span class="err">o</span><span class="err">l</span><span class="err">R</span><span class="err">e</span><span class="err">f</span><span class="err">s</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">C</span><span class="err">a</span><span class="err">t</span><span class="err">e</span><span class="err">g</span><span class="err">o</span><span class="err">r</span><span class="err">y</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+          <span class="err">-</span> <span class="err">_</span><span class="err">g</span><span class="err">e</span><span class="err">t</span><span class="err">O</span><span class="err">b</span><span class="err">j</span><span class="err">c</span><span class="mi">2</span><span class="err">N</span><span class="err">o</span><span class="err">n</span><span class="err">l</span><span class="err">a</span><span class="err">z</span><span class="err">y</span><span class="err">C</span><span class="err">l</span><span class="err">a</span><span class="err">s</span><span class="err">s</span><span class="err">L</span><span class="err">i</span><span class="err">s</span><span class="err">t</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>_read_images 函数比较长，但处理过程都是相似的。从 image 也就是 macho 文件加载 ObjC 相关信息。</p>
+<p>值得一说的是加载 Class 的过程，Class 的加载分为 Non-Lazy 和 Lazy 两种形式，有什么区别呢？</p>
+<p>实现 +load 方法的类，在编译时都会被加入到 Non-Lazy Section。</p>
+<p>从 mach-o 文件加载的 Class 是不能向它发消息的，要进一步的结构化，也就是 realize。而对于 Lazy Class 延迟到它收到第一条 message 时，才进行 realize。</p>
+<h2 id="格式化类">格式化类</h2>
+<p><code>realizeClassWithoutSwift(Class cls, Class previously)</code> 描述了格式化类的过程。 Class 实际上就是 objc_class 结构体指针。
+它的关键结构如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">objc_class</span> <span class="p">{</span>
+  <span class="n">Class</span> <span class="n">isa</span>
+  <span class="n">Class</span> <span class="n">superclass</span>
+  <span class="n">cache_t</span> <span class="n">cache</span>
+  <span class="n">class_data_bits_t</span> <span class="n">bits</span>
+<span class="p">}</span>
+
+<span class="k">struct</span> <span class="nc">class_data_bits_t</span> <span class="p">{</span>
+  <span class="n">uintptr_t</span> <span class="n">bits</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>class_data_bits_t 结构体只有一个 bits 字段，它不是单纯的指针，得从比特位的角度进行细分。在 x86_64 架构下，bits 与 FAST_DATA_MASK 位掩码的结果表示 class_ro_t 结构体指针，格式化后会用 class_rw_t 指针覆盖。</p>
+<p>ro = (const class_ro_t <em>)cls-&gt;data(); // (bits &amp; FAST_DATA_MASK); 3~47 bit
+rw = (class_rw_t</em>)calloc(sizeof(class_rw_t), 1);
+rw-&gt;ro = ro;
+rw-&gt;flags = RW_REALIZED|RW_REALIZING;
+cls-&gt;setData(rw); // 覆盖 ro</p>
+<p>class_ro_t 表示编译期确定的类信息，包括实例变量，属性，方法，协议等。而运行期动态添加的信息，会被添加到 class_rw_t 结构体中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// 运行期动态创建结构
+</span><span class="c1"></span><span class="k">struct</span> <span class="nc">class_rw_t</span> <span class="p">{</span>
+  <span class="c1">// … 省略若干字段
+</span><span class="c1"></span>  <span class="k">const</span> <span class="n">class_ro_t</span> <span class="o">*</span><span class="n">ro</span><span class="p">;</span>
+
+  <span class="n">method_array_t</span> <span class="n">methods</span><span class="p">;</span>
+  <span class="n">property_array_t</span> <span class="n">properties</span><span class="p">;</span>
+  <span class="n">protocol_array_t</span> <span class="n">protocols</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 编译期确定结构
+</span><span class="c1"></span><span class="k">struct</span> <span class="nc">class_ro_t</span> <span class="p">{</span>
+  <span class="c1">// … 省略若干字段
+</span><span class="c1"></span>  <span class="n">method_list_t</span> <span class="o">*</span><span class="n">baseMethodList</span><span class="p">;</span>
+  <span class="n">protocol_list_t</span> <span class="o">*</span><span class="n">baseProtocols</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">ivar_list_t</span> <span class="o">*</span><span class="n">ivars</span><span class="p">;</span>
+  <span class="n">property_list_t</span> <span class="o">*</span><span class="n">baseProperties</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>结构化过程会递归调用，确保祖先类已经 realize，同时记录父类和元类的指针关系。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">static</span> <span class="n">Class</span> <span class="nf">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="n">Class</span> <span class="n">previously</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// 调整 class_rw_t / class_ro_t 指向
+</span><span class="c1"></span>  <span class="n">ro</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="n">class_ro_t</span> <span class="o">*</span><span class="p">)</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">data</span><span class="p">(</span><span class="p">)</span><span class="p">;</span> <span class="c1">// (bits &amp; FAST_DATA_MASK); // 3~47 bit
+</span><span class="c1"></span>  <span class="n">rw</span> <span class="o">=</span> <span class="p">(</span><span class="n">class_rw_t</span><span class="o">*</span><span class="p">)</span><span class="n">calloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">class_rw_t</span><span class="p">)</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span>
+  <span class="n">rw</span><span class="o">-</span><span class="o">&gt;</span><span class="n">ro</span> <span class="o">=</span> <span class="n">ro</span><span class="p">;</span>
+  <span class="n">rw</span><span class="o">-</span><span class="o">&gt;</span><span class="n">flags</span> <span class="o">=</span> <span class="n">RW_REALIZED</span><span class="o">|</span><span class="n">RW_REALIZING</span><span class="p">;</span>
+  <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">setData</span><span class="p">(</span><span class="n">rw</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">supercls</span> <span class="o">=</span> <span class="n">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">remapClass</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">superclass</span><span class="p">)</span><span class="p">,</span> <span class="n">nil</span><span class="p">)</span><span class="p">;</span>
+  <span class="n">metacls</span> <span class="o">=</span> <span class="n">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">remapClass</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">ISA</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="n">nil</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">superclass</span> <span class="o">=</span> <span class="n">supercls</span><span class="p">;</span>
+  <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">initClassIsa</span><span class="p">(</span><span class="n">metacls</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="c1">// Attach categories
+</span><span class="c1"></span>  <span class="n">methodizeClass</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">previously</span><span class="p">)</span><span class="p">;</span>
+  
+  <span class="k">return</span> <span class="k">class</span>
+<span class="err">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Class 相关的信息 realize 后，还要对其方法进行 methodize 调整。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">static</span> <span class="kt">void</span> <span class="n">methodizeClass</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="n">Class</span> <span class="n">previously</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Class 参数可以是类或者元类。</p>
+<p>这个函数的功能分为两部分：</p>
+<ol>
+<li>将 ro 结构体中的属性、方法、协议，添加到 rw 结构体。</li>
+<li>将 cls 所有的 category 中的属性、方法、协议，添加到 rw 结构体。</li>
+</ol>
+<p>属性，方法，协议列表存储在结构相同的数组中。</p>
+<p>以方法为例，method_array_t&lt;method_list_t&gt; 数组，元素类型为 method_list_t，表示方法列表，先添加主类中的 method list，随后添加各 Category method list，后面添加的 list 会被插入到 array 的前面。</p>
+<p>在方法查找时，如果没有缓存，会从前往后遍历方法，找到后立即返回，因此 Category 中如果和主类有同名的方法，就会覆盖主类的实现。</p>
+<p>因为方法的结构是一个二维数组，在方法查找时，理论上遍历的时间复杂度是 O(n^2)。</p>
+<p>在添加方法时，会进行修正优化，根据方法 sel 字符串进行排序。因此在外层线性查找，内层以排序的方法名，采用二分查找。</p>
+<p>同时，会对找到的方法 IMP 进行缓存。</p>
+<h2 id="调用-load">调用 load</h2>
+<p>image map 完成后，load_images 会逐个被调用，并传入当前 image 的 path 和 macho header。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">void</span>
+<span class="nf">load_images</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span> <span class="n">__unused</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="nc">mach_header</span><span class="o">*</span><span class="n">mh</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">prepare_load_methods</span><span class="p">(</span><span class="p">(</span><span class="k">const</span> <span class="n">headerType</span> <span class="o">*</span><span class="p">)</span><span class="n">mh</span><span class="p">)</span><span class="p">;</span>
+  <span class="n">call_load_methods</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>上面简化版的 load_images 函数，主要做两件事情：</p>
+<ol>
+<li>收集实现 load 方法的 Class/Category</li>
+<li>调用 load 方法</li>
+</ol>
+<p>收集 load 方法的函数 prepare_load_methods，主要做两件事情：</p>
+<ol>
+<li>收集实现 load 方法的 non lazy class，添加到 loadable_classes</li>
+<li>收集实现 load 方法的 non lazy category，添加到 loadable_categories</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">void</span> <span class="nf">prepare_load_methods</span><span class="p">(</span><span class="k">const</span> <span class="n">headerType</span> <span class="o">*</span><span class="n">mhdr</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">size_t</span> <span class="n">count</span><span class="p">,</span> <span class="n">i</span><span class="p">;</span>
+
+    <span class="n">runtimeLock</span><span class="p">.</span><span class="n">assertLocked</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="c1">// 从 non lazy section 读取 class
+</span><span class="c1"></span>    <span class="n">classref_t</span> <span class="k">const</span> <span class="o">*</span><span class="n">classlist</span> <span class="o">=</span> <span class="n">_getObjc2NonlazyClassList</span><span class="p">(</span><span class="n">mhdr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">count</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">+</span><span class="o">+</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">schedule_class_load</span><span class="p">(</span><span class="n">remapClass</span><span class="p">(</span><span class="n">classlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">category_t</span> <span class="o">*</span> <span class="k">const</span> <span class="o">*</span><span class="n">categorylist</span> <span class="o">=</span> <span class="n">_getObjc2NonlazyCategoryList</span><span class="p">(</span><span class="n">mhdr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">count</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">+</span><span class="o">+</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">category_t</span> <span class="o">*</span><span class="n">cat</span> <span class="o">=</span> <span class="n">categorylist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">;</span>
+        <span class="n">Class</span> <span class="n">cls</span> <span class="o">=</span> <span class="n">remapClass</span><span class="p">(</span><span class="n">cat</span><span class="o">-</span><span class="o">&gt;</span><span class="n">cls</span><span class="p">)</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cls</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>  <span class="c1">// category for ignored weak-linked class
+</span><span class="c1"></span>        <span class="n">realizeClassWithoutSwift</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">nil</span><span class="p">)</span><span class="p">;</span>
+        <span class="n">add_category_to_loadable_list</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在编译时，macho 文件 __objc_nlclslist section，包含所有实现 load 方法的 class，会添加到 loadable_class 数组，数组的元素是一个结构体，包含 class 和 load 函数的地址。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">static</span> <span class="kt">void</span> <span class="nf">schedule_class_load</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cls</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    <span class="n">ASSERT</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">isRealized</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>  <span class="c1">// 确保已经格式化完成
+</span><span class="c1"></span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">data</span><span class="p">(</span><span class="p">)</span><span class="o">-</span><span class="o">&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">RW_LOADED</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="c1">// 确保父类的 load 方法先被添加
+</span><span class="c1"></span>    <span class="n">schedule_class_load</span><span class="p">(</span><span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">superclass</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="c1">// 添加到 list
+</span><span class="c1"></span>    <span class="n">add_class_to_loadable_list</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="c1">// 标记已经 load
+</span><span class="c1"></span>    <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">setInfo</span><span class="p">(</span><span class="n">RW_LOADED</span><span class="p">)</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">add_class_to_loadable_list</span><span class="p">(</span><span class="n">Class</span> <span class="n">cls</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">IMP</span> <span class="n">method</span><span class="p">;</span>
+
+    <span class="n">loadMethodLock</span><span class="p">.</span><span class="n">assertLocked</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="n">method</span> <span class="o">=</span> <span class="n">cls</span><span class="o">-</span><span class="o">&gt;</span><span class="n">getLoadMethod</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">method</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="n">loadable_classes</span><span class="p">[</span><span class="n">loadable_classes_used</span><span class="p">]</span><span class="p">.</span><span class="n">cls</span> <span class="o">=</span> <span class="n">cls</span><span class="p">;</span>
+    <span class="n">loadable_classes</span><span class="p">[</span><span class="n">loadable_classes_used</span><span class="p">]</span><span class="p">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="p">;</span>
+    <span class="n">loadable_classes_used</span><span class="o">+</span><span class="o">+</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>add_class_to_loadable_list 方法添加 class 和 load，被添加的 class 需要确保其父类已经添加，添加完成后，向 class_rw_t 的 flags 标记写入 RW_LOADED。</p>
+<p>Category 同理，不过如果 Category 实现 load，对应的 Class 如果没有实现 load，该 category 对应的 class 可能是没有被 realize 的，所以在添加 category 之前，要确保对应的 class 已经 realize。</p>
+<p>收集 load 函数完成后，开始执行 load 方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">void</span> <span class="nf">call_load_methods</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="n">loading</span> <span class="o">=</span> <span class="n">NO</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">more_categories</span><span class="p">;</span>
+
+  <span class="n">loadMethodLock</span><span class="p">.</span><span class="n">assertLocked</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">loading</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+  <span class="n">loading</span> <span class="o">=</span> <span class="n">YES</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="o">*</span><span class="n">pool</span> <span class="o">=</span> <span class="n">objc_autoreleasePoolPush</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">call_class_loads</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">call_category_loads</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">objc_autoreleasePoolPop</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span><span class="p">;</span>
+
+  <span class="n">loading</span> <span class="o">=</span> <span class="n">NO</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>load 的执行需要加锁，并且被自动释放池包裹，调用顺序如下：</p>
+<ol>
+<li>父类 load</li>
+<li>子类 load</li>
+<li>category load</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="p">(</span><span class="o">*</span><span class="n">load_method</span><span class="p">)</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="err">@</span><span class="n">selector</span><span class="p">(</span><span class="n">load</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>load 方法调用不走 objc_msgSend，而是直接调用 load 函数指针。</p>
+<p>所有 image 的 load 方法调用完成后，ObjC Runtime 的初始化过程也就完成了。</p>]]></content>
+        </item>
+        
+        <item>
+            <title>再读 《Objective-C 高级编程》内存管理篇</title>
+            <link>/posts/objc-memory-manage/</link>
+            <pubDate>Sun, 31 May 2020 00:02:44 +0800</pubDate>
+            
+            <guid>/posts/objc-memory-manage/</guid>
+            <description>&lt;p&gt;以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。&lt;/p&gt;
+&lt;p&gt;原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。&lt;/p&gt;
+&lt;p&gt;全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。&lt;/p&gt;
+&lt;p&gt;这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。&lt;/p&gt;
+&lt;p&gt;第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。&lt;/p&gt;</description>
+            <content type="html"><![CDATA[<p>以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。</p>
+<p>原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。</p>
+<p>全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。</p>
+<p>这本书的第一章比较全面的介绍 iOS 中内存管理相关的知识。虽然部分内容有些过时，但依然不影响我们理解内存管理的工作原理。</p>
+<p>第一章主要分为三个模块，分别介绍了引用计数、ARC 以及 ARC 的实现。</p>
+<h2 id="引用计数">引用计数</h2>
+<p>引用计数与是否开启 ARC 无关，区别仅仅在于管理引用计数的 retain/relase 方法，是由程序员手写，还是在编译时插入。</p>
+<p>引用计数的原理非常简单：对象的引用计数大于 0 时存活，等于 0 时销毁。</p>
+<p>然而，具体到上下文环境，就没有这么简单了。内存管理中有四句口诀：</p>
+<ul>
+<li>自己生成的对象，自己持有；</li>
+<li>非自己生成的对象，自己也能持有；</li>
+<li>不再需要自己持有的对象时释放；</li>
+<li>非自己持有的对象无法释放。</li>
+</ul>
+<p>自己生成的对象，引用计数默认为 1，不需要调用 retain 方法增加引用计数。那么怎么才算自己生成的对象呢？由 alloc/new/copy/mutableCopy 创建的对象。</p>
+<p>从 objc 源码窥探，新生成的对象，isa_t 结构体中 <code>extra_rc</code> 字段的值为 0，表示没有额外的引用计数，只有「自己」持有，所以引用计数为 1。</p>
+<p>非自己生成的对象，自己也能持有，前提是必须调用 retain 方法。而在 ARC 时代，retain 方法是由编译器添加的。</p>
+<p>前面讲到，自己生成的对象不需要调用 retain 方法，那编译器怎么区分这两种场景呢？</p>
+<p>通过文本检查，也就是判断对象是不是由包含 alloc/new/copy/mutableCopy 的表达式返回的。ARC 下又增加了对 init 的检查。</p>
+<p>因此实际在编写 init 方法时，要符合编译器内存管理的语义，该方法必须由 alloc 创建的对象调用，并且编译器不会把返回值注册到 autoreleasePool。</p>
+<p>在 init 方法内部，新创建的对象引用计数为 1，返回时不会向超出作用域的局部变量发送 release 消息，因此不把它注册到 autoreleasePool，调用方也能顺利持有创建结果。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-objc" data-lang="objc"><span class="p">{</span>
+  <span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[</span><span class="p">[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span><span class="p">;</span>
+<span class="p">}</span> <span class="c1">// obj 释放
+</span></code></pre></td></tr></table>
+</div>
+</div><p>如果 init 的返回值没有人持有，则会在返回时向新创建的对象发送 release 消息，立即释放对象。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-objc" data-lang="objc"><span class="p">{</span>
+  <span class="p">[</span><span class="p">[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span><span class="p">;</span> <span class="c1">// 立即释放
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>对象在引用计数为 1 时，处理 release 消息过程中，会继续向对象发送 dealloc 消息，销毁对象。</p>
+<p>销毁对象的过程在 NSObject 的 dealloc 方法中实现，在 ARC 下，我们一般重写 dealloc 方法时，不需要也不能调用 [super dealloc]，是因为编译器自动为为我们插入了 super 调用。</p>
+<h2 id="weak">weak</h2>
+<p>仅仅依赖 retain/release 来维护引用计数是不够的，常见的内存泄漏场景便是循环引用。</p>
+<p>打破引用环的唯一方式，让一方不强引用另一方。unsafe_unretain 能实现不增加引用计数，但会导致野指针，在 ARC 下 weak 引用是最佳选择。</p>
+<p>weak 引用不持有对象，只能作为强引用的辅助，只有 weak 引用的对象会立即释放，并且将所有弱引用指针都置为 nil。</p>
+<p>weak 引用需额外做很多工作，因此有一定的性能开销。被 weak 引用的对象，在 isa_t 结构体中会有所标记，并使用哈希表来维护弱引用指针。key 为对象地址的哈希，值为数组，用于存储弱引用指针列表。</p>
+<p>而当弱引用指针超过 4 个时，会将数组改为哈希表，进一步降低执行效率和增加空间占用。</p>
+<p>其中的实现还是蛮值得思考的，为什么要将数组存储转为哈希表呢？哈希表实际上也是基于数组实现的，并且存在负载因子，需要比实际存储数据，消耗更多的内存。</p>
+<p>其实是一种以空间换时间的思想，数组的访问时间复杂度是 O(n) 的，在数据量增大时，访问速度线性递减。而哈希表访问的平均时间为 O(1)。</p>
+<h2 id="autorelease">autorelease</h2>
+<p>内存管理中还有一种常见的需求，如何做对象所有权的转移。</p>
+<p>对于以对象作为返回值的方法，在返回前如果调用 release，对象会立即销毁，调用方将无法取到返回值。而如果返回前不调用 release，应该如何保持引用计数的平衡呢？</p>
+<p>因此，引入了 autoreleasePool，借助外界的力量。对象调用 autorelease 方法，会被加入自动释放池，引用计数加 1，加入自动释放池的对象不需要手动释放，在合适的时机由释放池负责清理。</p>
+<p>在对象返回前，先加入自动释放池，再调用 release 方法，对象便不会被立即销毁，等调用方能顺利的取到对象，立即调用 retain 持有，以防稍后被自动释放池清理。</p>
+<p>以上实现方法返回值对象所有权的转移，同时满足了「非自己生成的对象，自己也能持有」。</p>
+<p>这些实现在 ARC 下，都由编译器负责，在 release 模式下，会做些优化，但原理依然不变。</p>]]></content>
+        </item>
+        
+        <item>
+            <title>HTTP 客户端缓存的实现原理</title>
+            <link>/posts/http-cache/</link>
+            <pubDate>Tue, 14 Apr 2020 08:14:53 +0800</pubDate>
+            
+            <guid>/posts/http-cache/</guid>
+            <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;
+&lt;p&gt;HTTP 是一种同步的应用层协议，客户端在发出请求后，需要等待服务端的响应，在这个过程中，请求是阻塞的。&lt;/p&gt;
+&lt;p&gt;在端上响应时间是应用程序关键的性能指标，因此 HTTP 的响应速度，对提升应用程序的性能非常关键。&lt;/p&gt;
+&lt;p&gt;缓存技术，是提高性能的一大利器。&lt;/p&gt;</description>
+            <content type="html"><![CDATA[<h2 id="前言">前言</h2>
+<p>HTTP 是一种同步的应用层协议，客户端在发出请求后，需要等待服务端的响应，在这个过程中，请求是阻塞的。</p>
+<p>在端上响应时间是应用程序关键的性能指标，因此 HTTP 的响应速度，对提升应用程序的性能非常关键。</p>
+<p>缓存技术，是提高性能的一大利器。</p>
+<h2 id="缓存的作用">缓存的作用</h2>
+<p><strong>提高响应速度</strong>。HTTP 在第一次请求响应完成后，会把响应数据缓存在本地（磁盘或内存），在下次相同的请求发起时，优先使用本地缓存，大幅度的提高响应速度。</p>
+<p><strong>节省网络带宽</strong>。响应数据直接从本地取，不会触发网络请求，减少了网络带宽的占用。</p>
+<p><strong>降低服务器的压力</strong>。客户端的发起的请求数量减少，避免出现请求过载的情况。</p>
+<h2 id="缓存命中与未命中">缓存命中与未命中</h2>
+<p>缓存访问结果可以分为两种：命中和未命中。</p>
+<p>未命中没什么好说的，必须发起网络请求，从服务端获取响应数据。</p>
+<p>而缓存命中，对上层应用来说，并不代表就能使用。HTTP 的响应资源存在时效性，在命中的前提下，又分为<strong>缓存有效</strong>和<strong>再验证</strong>。</p>
+<p>再验证的结果又能分为两种：</p>
+<ul>
+<li>缓存未过期，服务端返回 <code>304 Not Modified</code> ，通知客户端使用本地缓存。</li>
+<li>缓存过期，服务端返回 <code>200 OK</code> ，同时携带新的数据返回。</li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/iostalks/images/master/blog/20200419100900.png" alt="20200419100900.png"></p>
+<h2 id="缓存命中率和性能">缓存命中率和性能</h2>
+<p>缓存命中率有两个维度的评估指标：次数命中率和字节命中率。</p>
+<p>次数命中率代表缓存命中次数，占据所有请求次数的百分比，它表示 HTTP 请求在响应时延上的性能。</p>
+<p>然而，次数命中率高不代表性能就好，如果小字节数据都命中了，但大字节数据不命中，总体的性能并不会高。</p>
+<p>因此，就有了字节命中率的概念，它表示缓存提供的字节，在响应传输的所有字节中的占比。</p>
+<p>从缓存的角度，我们有两种方式来优化 HTTP 的性能：<strong>提高缓存次数命中率，降低请求时延；提高缓存字节命中率，缓解网络带宽瓶颈。</strong></p>
+<h2 id="缓存控制方式">缓存控制方式</h2>
+<p>缓存虽然能够提高 HTTP 请求的性能，但它并不总是有效的，服务端数据如果发生更新，客户端仍然使用了本地缓存，拿到的响应数据就不是新鲜的。</p>
+<p>那么，HTTP 是如何检测本地缓存是否失效的呢？</p>
+<p>在响应头部添加响应报文的创建时间，以及生存时间（保质期）。它们分别对应 <code>Date</code> 和 <code>Cache-Control: max-age</code> 字段。</p>
+<blockquote>
+<p>注：响应报文的创建时间是指 HTTP 准备好返回给客户端 Response 的时间，而不是 Response 携带的 Data 的创建时间。</p>
+</blockquote>
+<p>客户端发起 HTTP 请求，会优先检测缓存的有效期，如果已经失效会发起再验证请求。否者默认会使用缓存报文。</p>
+<p><code>Cache-Control</code> 除了能用来表示响应报文的生存周期。它也能用在请求报文的头部，客户端可以使用以下几种值来控制缓存：</p>
+<p><code>no-store</code> : 不允许缓存响应数据，一般用于变化数据非常频繁的场景，或者安全性考虑比较高的地方。</p>
+<p><code>no-cache</code> : 它的字面含义，容易被误导。 <code>no-cache</code> 并不代表不使用缓存，它表示可以缓存，但不相信缓存，每次请求都需要去服务端再验证。</p>
+<p><code>must-revalidate</code> : 和 <code>no-cache</code> 类似，但在缓存有效期内，不会进行再验证。如果过期了，必须去服务端验证，此时服务器如果不可用，需返回 <code>504 Gateway timeout</code> 。</p>
+<h2 id="条件验证">条件验证</h2>
+<p><code>Cache-Control</code> 字段能够用来刷新数据，但不能很好的利用缓存。假如资源还在有效期内，强制刷新数据，服务端报文又没有发生变化，会造成不必要的浪费。</p>
+<p>HTTP 缓存有一种机制，能够告诉服务端当前缓存的「版本」，如果服务端发现客户端的缓存是最新的，则返回 304。</p>
+<p>HTTP 协议定义的 If 开头的 Header，称为条件请求字段，用来资源有效性检测。</p>
+<p>常用的两个请求头字段是 <code>If-Modified-Since</code> 和 <code>If-None-Match</code> ，他们分别配合响应头 <code>Last-Modified</code> 和 <code>ETag</code> 使用。</p>
+<p><code>Last-Modified</code> 表示资源上次修改的时间，如果请求头 <code>If-Modified-Since</code> 字段的时间不早于这个时间，说明资源在这之后没有修改过。响应就不必返回资源，而是返回 <code>304 Not Modified</code> 通知客户端使用缓存。</p>
+<p><code>If-Modified-Since</code> 的时间只精确到秒，如果是毫秒级变化的数据，这个字段就无法保证响应的有效性了。 <code>ETag</code> 能够很好的解决这个问题，它用来作为资源的唯一标识。</p>
+<p>请求头 <code>If-None-Match</code> 的值是上一次响应的 ETag，服务端收到后，会和当前资源的 ETag 作对比，如果没有发生变化，返回 <code>304 Not Modified</code> ，否则返回最新的资源。</p>
+<h2 id="小结">小结</h2>
+<p>本文主要介绍了使用 HTTP 缓存的原因，如何控制 HTTP 的缓存，以及通过条件验证，如何更加高效的利用缓存和更新。</p>]]></content>
+        </item>
+        
+        <item>
+            <title>一文读懂 CORS</title>
+            <link>/posts/kills-cors-doubt/</link>
+            <pubDate>Tue, 17 Mar 2020 10:01:57 +0800</pubDate>
+            
+            <guid>/posts/kills-cors-doubt/</guid>
+            <description>&lt;p&gt;前端开发经常会遇到跨域问题，通过搜索基本都能解决，或者直接交给后端处理，只要浏览器不要再报下面的错误就行。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;XMLHttpRequest cannot load &lt;a href=&#34;https://api.example.com&#34;&gt;https://api.example.com&lt;/a&gt;. No &amp;lsquo;Access-Control-Allow-Origin&amp;rsquo; header is present on the requested resource. Origin &amp;lsquo;http://localhost:8100&amp;rsquo; is therefore not allowed access.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在解决这个问题后，我还是感觉云里雾里，阅读了很多资料，最终认为自己“理解”了，以下是我的理解内容：&lt;/p&gt;</description>
+            <content type="html"><![CDATA[<p>前端开发经常会遇到跨域问题，通过搜索基本都能解决，或者直接交给后端处理，只要浏览器不要再报下面的错误就行。</p>
+<blockquote>
+<p>XMLHttpRequest cannot load <a href="https://api.example.com">https://api.example.com</a>. No &lsquo;Access-Control-Allow-Origin&rsquo; header is present on the requested resource. Origin &lsquo;http://localhost:8100&rsquo; is therefore not allowed access.</p>
+</blockquote>
+<p>在解决这个问题后，我还是感觉云里雾里，阅读了很多资料，最终认为自己“理解”了，以下是我的理解内容：</p>
+<blockquote>
+<p>浏览器为了用户数据安全，默认不允许跨域。只要 <code>XMLHttpRequest</code> 发起请求的<a href="https://developer.mozilla.org/en-US/docs/Glossary/origin">源</a>和浏览器地址栏中的源不一致，请求就会被限制。解决办法是采用跨域资源访问（CORS），后端在 Response Header 中写入 <code>Access-Control-Allow-Origin: *</code> 。</p>
+</blockquote>
+<p>后来又查了一下 <code>Access-Control-Allow-Origin</code> 的作用，发现这个理解有点肤浅。</p>
+<p>关于跨域我提出了如下几个问题：</p>
+<ul>
+<li>什么是用户数据，它存在哪里？</li>
+<li>为什么用户数据在浏览器中会不安全？</li>
+<li>为什么要跨域？是谁阻止了跨域？</li>
+<li>跨域的主体是谁？跨域了能做什么？</li>
+<li>实现跨域后，用户数据会不会不安全？</li>
+</ul>
+<p>如果对以上问题存在疑惑，希望这篇文章能为你解答。</p>
+<p>在讲跨域前，我们需要了解一点基础知识。</p>
+<h2 id="http-前瞻">HTTP 前瞻</h2>
+<p>浏览器通常是基于 HTTP 协议和 Web 服务器通信的，因为 HTTP 协议无状态的特性，浏览器会在本地存储服务端发来的 Cookie，在下次发送请求时，带上 Cookie 来表明自己的身份，Cookie 就属于用户数据。</p>
+<p>为了提高 HTTP 通信的效率，HTTP 设计了缓存策略，用来缓存 Response 数据，下次发起同样的请求时，会尝试使用本地缓存，来加快请求速度，减小服务器压力。</p>
+<p>HTTP Respone 中可能会携带用户敏感信息。</p>
+<p>浏览器能访问不同的网站，用户数据原本存在各自的远端服务器，但如果用户数据支持本地缓存，就会共处于浏览器缓存中。访问银行网站，会缓存银行卡、手机号等信息；看小电影，会缓存一些小电影的元数据。</p>
+<p>这些数据都能被浏览器访问，那如何保证小电影网站的 JS 代码，不会偷偷读取银行网站缓存的用户数据，然后上传到它们后台呢？</p>
+<h2 id="同源策略">同源策略</h2>
+<p>浏览器会对访问本地数据的 JS 进行监管，想要获取本地数据，就需要携带身份信息，默认只允许 JS 访问和它同源的数据，这就是<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">同源策略</a>。</p>
+<p><strong>浏览器在存储用户数据时，会标记数据的来源(Origin)。当 JS 脚本访问本地数据时，会检查它的源是否和用户数据关联的源一致，不一致就会拒绝访问。</strong></p>
+<blockquote>
+<p>JS 和 HTML 是同源的，即显示在浏览器地址栏中的 Scheme + Host + (Port)。</p>
+</blockquote>
+<p>A 网站在发起 XMLHttpRequest 请求时，浏览器会在该请求的 Header 中添加 <code>Origin: A</code> 字段，来表明请求者的身份。需要注意这里的 A 并不是 XMLHTTPRequest 的 Host，而是 JS 文件的来源。</p>
+<p><img src="https://raw.githubusercontent.com/iostalks/images/master/blog/20200317112658.png" alt="20200317112658.png"></p>
+<p>浏览器会先检查本地是否存在该请求的 Response 缓存，如果存在并且缓存未失效，会验证 JS 的来源，也就是 XMLHttpRequest Header 中的 Origin 字段。</p>
+<p>上图中 XMLHttpRequest 请求的源是 <code>http://testdrive.dasouche.net</code> ，如果该请求之前已经发起成功过，本地会存在它的 Response 缓存，并且缓存会有这个源标记。</p>
+<p>Request Header 携带的源（Origin）是 <code>http://f2e.su.dasouche.net</code> ，它代表 JS 文件的来源，浏览器检查到它与缓存的源不一致，会拒绝访问 Response，并抛出 XMLHttpRequest 请求异常。</p>
+<p>上面的例子，看上去不太合理，如果请求从来没有成功过，就不会存在缓存。</p>
+<p>其实如果本地没缓存， XMLHttpRequest <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests">简单请求</a>依然会发出去，并且会把 Response 写入了缓存（如果允许的话），之后浏览器才会根据以上同源策略，控制缓存的读取。</p>
+<h2 id="cors-跨域">CORS 跨域</h2>
+<p>在实际开发中，请求 HTML/JS 资源的源，可能和 XMLHttpRequest 请求不同源。跨域就是为了突破浏览器同源策略的限制。</p>
+<p>JS 想要跨越它的来源限制，去访问 XMLHttpRequest 请求的 Response 数据。所以严格来讲跨域的说法并不准确，准确的说法应该叫跨源。</p>
+<p>实现跨域的方法有很多，比如有 JSONP、WebSocket、CORS 等。我们来看看最常见的 CORS 是如何实现跨域的。</p>
+<p>CORS 全称跨源资源共享（Cross-Origin Resource Share)，也就是通过某种机制来共享数据。</p>
+<p>服务端在返回 Response 时，默认只允许同源的 JS 访问，如果服务端在 HTTP Response 中附加一个白名单，标记允许哪些域访问该资源，就允许了跨域访问。</p>
+<p>这个白名单就是响应头 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin">Access-Control-Allow-Origin</a>。</p>
+<p>浏览器会允许 <code>Access-Control-Allow-Origin</code> 白名单中的域访问 Response，如果是 <code>Access-Control-Allow-Origin: *</code> 就表示允许任何域访问该 Respone，这是存在安全隐患的。</p>
+<p>如果恶意网站制造一个和银行网站一模一样的请求，本地 Response 缓存没有访问权限控制，浏览器会傻傻的把响应数据交给这个恶意网站。</p>
+<p>所以对于用户数据敏感接口，最好还是不要开启允许任意域访问，而是采用白名单机制。</p>
+<h2 id="小结">小结</h2>
+<p>同源策略在浏览器端保证用户数据的安全，但它也给同一个网站不同域请求的数据共享带来不便。</p>
+<p>因此就有了跨域的需求，跨域的方法有很多，本文主要介绍了 CORS 跨域，以及它的原理。</p>
+<p>虽然同源限制来自于浏览器，但 CORS 允许跨域的开关掌握在服务端。这样即保证了用户数据的安全，又实现了数据的共享，可谓一举两得。</p>]]></content>
+        </item>
+        
+        <item>
+            <title>JavaScript 对象转值的原理</title>
+            <link>/posts/js-object-toprimitive/</link>
+            <pubDate>Sun, 09 Feb 2020 14:45:39 +0800</pubDate>
+            
+            <guid>/posts/js-object-toprimitive/</guid>
+            <description>&lt;p&gt;JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;[] + []&lt;/code&gt; , &lt;code&gt;[] + {}&lt;/code&gt; , &lt;code&gt;${obj}&lt;/code&gt; ，这些表达式计算结果是什么，又是如何得出这个结果的？&lt;/p&gt;</description>
+            <content type="html"><![CDATA[<p>JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。</p>
+<p><code>[] + []</code> , <code>[] + {}</code> , <code>${obj}</code> ，这些表达式计算结果是什么，又是如何得出这个结果的？</p>
+<p>参与数学计算的运算数必须是值类型，并且类型相同。在强类型的语言中，类型不同的值参与计算会导致编译错误。</p>
+<p>对于 js 来说，它会在运行时「智能」的进行类型转换，得到一个使用者可能期望的结果。</p>
+<p>但如果使用者对这个结果不满意，希望自定义，就需要了解运行时类型转换的原理。</p>
+<p>类型转换会发生在值类型与值类型，值类型与对象类型之间。这里我们主要来探讨一下对象到值类型的转换过程。</p>
+<h2 id="求值的基础">求值的基础</h2>
+<p>JavaScript 中存在的六种值类型：Null, Undefined, Boolean, Number, String, Symbol。</p>
+<p>既然是对象，就说明它存在，不能转为 Null 和 Undefined 类型。</p>
+<p>同理，对象一定非空，转 Boolean 类型为 <code>true</code> 。</p>
+<p>对象不会自动发生 Symbol 转换，除非使用强制类型转换函数 <code>Symbol()</code> 。</p>
+<p>比较常见的情况是，对象转 Number 和 String。</p>
+<p>根据 <a href="https://tc39.es/ecma262/#sec-toprimitive">EMACScript 规范</a>，对象转值（toPrimitive）类型会产生三种的 hint，分别是 <code>number</code> 、 <code>string</code> 、 <code>default</code> 。</p>
+<p>我们可以根据 hint 来自定义转换的目标值。</p>
+<h3 id="number"><code>number</code></h3>
+<p>显式地调用 <code>Number()</code> 函数，或者对象参与数学计算时：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="nb">Number</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span><span class="p">;</span> <span class="c1">// NaN
+</span><span class="c1"></span><span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="o">+</span><span class="nx">obj</span><span class="p">;</span> <span class="c1">// NaN
+</span><span class="c1"></span><span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="nx">obj1</span> <span class="o">-</span> <span class="nx">obj2</span><span class="p">;</span> <span class="c1">// NaN
+</span></code></pre></td></tr></table>
+</div>
+</div><p>虽然默认的计算结果为 <code>NaN</code> ，但它属于 <code>number</code> 转换。</p>
+<h3 id="string"><code>string</code></h3>
+<p>显式地调用 <code>String()</code> 函数，或者某些期望接受 String 类型的参数，当传入对象时，会发生对象到 <code>string</code> 的转换。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="nb">String</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span><span class="p">;</span> <span class="c1">// &#39;[object Object]&#39;
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="sb">`</span><span class="si">${</span><span class="nx">obj</span><span class="si">}</span><span class="sb">`</span> <span class="p">)</span><span class="p">;</span> <span class="c1">// [object Object]
+</span><span class="c1"></span><span class="nx">anotherObj</span><span class="p">[</span><span class="nx">obj</span><span class="p">]</span> <span class="o">=</span> <span class="mi">123</span><span class="p">;</span> <span class="c1">// { &#39;[object Object]&#39;: 123 }
+</span></code></pre></td></tr></table>
+</div>
+</div><p>字符串模板接受字符串参数，传入非字符串类型，会发生隐式转换。</p>
+<p>对象的属性名支持字符串和 Symbol 类型， 除这两种类型外，会默认转为字符串。</p>
+<h3 id="default"><code>default</code></h3>
+<p>当不能确定某个操作期望得到什么类型时，例如二元运算符 <code>+</code> 的结果，可能是字符串也可能是数字。因此无法确定是把运算数转为 <code>number</code> 还是 <code>string</code> 。</p>
+<p>这会产生一个 <code>default</code> 类型的 hint。</p>
+<p>对象与 String, Number, Symbol 类型进行判等，也无法确定转换的目标类型。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="c1">// 产生 default 类型的 hint
+</span><span class="c1"></span><span class="nx">obj1</span> <span class="o">+</span> <span class="nx">obj2</span><span class="p">;</span>
+<span class="nx">obj</span> <span class="o">==</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>我们不必记忆哪些情况是 <code>default</code> 类型的转换，后面会讲到，它的转换处理流程和 <code>number</code> 相同。</p>
+<p>特殊的是，比较操作符，例如： <code>&gt;</code> 、 <code>&lt;</code> ，虽然能用于比较 Number 和 String 类型，但它们的 hint 是 <code>number</code> ，这是历史遗留问题。</p>
+<h2 id="类型转换的过程">类型转换的过程</h2>
+<p>在实现上，对象到值类型的转换，会分三个步骤：</p>
+<p>1、判断对象是否存在一个属性名为 <code>Symbol.toPrimitive</code> 的函数，如果存在调用它，并传入以上三种之一的 hint 作为参数。如果这个函数返回值类型，就是对象转值的结果；如果返回非值类型，会抛出异常。如果不存在这个属性，执行下一步。</p>
+<p>2、hint 类型如果是 <code>string</code> ，会依次调用对象的 <code>toString()</code> 和 <code>valueOf()</code> 函数，直到某一个函数在该对象实现，并返回值类型为止。如果返回非值类型，会忽略这个方法。</p>
+<p>3、hint 类型如果是 <code>number</code> 或者 <code>default</code> ，会依次调用对象的 <code>valueOf()</code> 和 <code>toString()</code> ，直到某个函数在该对象实现，并返回值类型为止。如果返回非值类型，会忽略这个方法。</p>
+<h2 id="symboltoprimitive">Symbol.toPrimitive</h2>
+<p>一个实现 <code>Symbol.toPrimitive</code> 属性的 <code>user</code> 对象：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">user</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;Smallfly&#39;</span><span class="p">,</span>
+  <span class="nx">age</span><span class="o">:</span> <span class="s1">&#39;27&#39;</span><span class="p">,</span>
+  <span class="p">[</span><span class="nx">Symbol</span><span class="p">.</span><span class="nx">toPrimitive</span><span class="p">]</span><span class="p">(</span><span class="nx">hint</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="sb">`</span><span class="sb">[</span><span class="si">${</span><span class="nx">hint</span><span class="si">}</span><span class="sb">]</span><span class="sb">`</span> <span class="p">)</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">hint</span> <span class="o">===</span> <span class="s1">&#39;string&#39;</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;name: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span><span class="p">;</span>
+      <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;age: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">)</span><span class="p">;</span>
+      <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">user</span><span class="si">}</span><span class="sb">`</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [string] name: Smallfly -- Smallfly
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="o">+</span><span class="nx">user</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [number] age: 27 -- 27
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">user</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [default] age: 27 -- 27
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>user</code> 传入字符串模板触发了 <code>string</code> 转换； <code>+</code> 一元运算符触发了 <code>number</code> 转换； <code>+</code> 二元运算符触发 <code>default</code> 转换。</p>
+<p><code>Symbol.toPrimitive</code> 函数包含了 <code>user</code> 转简单值类型的所有情况。</p>
+<h2 id="tostringvalueof">toString/ValueOf</h2>
+<p>如果对象没有实现 <code>Symbol.toPrimitive</code> 方法，会继续尝试调用 <code>toString</code> 和 <code>valueOf</code> 方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">user</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;Smallfly&#39;</span><span class="p">,</span>
+  <span class="nx">age</span><span class="o">:</span> <span class="s1">&#39;27&#39;</span><span class="p">,</span>
+  <span class="nx">toString</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;[toString]&#39;</span><span class="p">)</span><span class="p">;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;name: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">;</span>
+  <span class="p">}</span><span class="p">,</span>
+  <span class="nx">valueOf</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;[valueOf]&#39;</span><span class="p">)</span><span class="p">;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;age: &#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">age</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">user</span><span class="si">}</span><span class="sb">`</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [toString] name: Smallfly
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="o">+</span><span class="nx">user</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [valueOf] age: 27 -- 27
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">user</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [valueOf] age: 27 -- 27
+</span></code></pre></td></tr></table>
+</div>
+</div><p>从结果上看， <code>toString/valueOf</code> 的组合功能和 <code>Symbol.toPrimitive</code> 完全一样。</p>
+<p><code>Symbol.toPrimitive</code> 是 ES6 引入的新功能，实现了对象转值类型方法的统一。</p>
+<p>对象如果没有实现这两个方法，默认使用 Object 对象的 <code>toString()/valueOf()</code> 方法， <code>toString()</code> 方法返回 <code>[object Object]</code> ， <code>valueOf()</code> 方法返回对象自身。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">obj</span> <span class="o">=</span> <span class="p">{</span><span class="p">}</span><span class="p">;</span>
+<span class="nx">obj</span><span class="p">.</span><span class="nx">toString</span><span class="p">(</span><span class="p">)</span><span class="p">;</span> <span class="c1">// [object Object]
+</span><span class="c1"></span><span class="nx">obj</span><span class="p">.</span><span class="nx">valueOf</span><span class="p">(</span><span class="p">)</span> <span class="o">===</span> <span class="nx">obj</span><span class="p">;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id="----"><code>[] + [] = ''</code></h2>
+<p><code>[] + []</code> 表达式的结果为空字符串，我们通过这个结果观察一下对象转值的具体过程。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">[</span><span class="p">]</span><span class="p">;</span>
+
+<span class="nx">a</span><span class="p">.</span><span class="nx">toString</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="s1">&#39;array string&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">a</span><span class="p">.</span><span class="nx">valueOf</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="mi">123</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="sb">`</span><span class="si">${</span><span class="nx">a</span><span class="si">}</span><span class="sb">`</span> <span class="p">)</span><span class="p">;</span> <span class="c1">// array string
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="o">+</span><span class="nx">a</span><span class="p">)</span><span class="p">;</span> <span class="c1">// 123
+</span></code></pre></td></tr></table>
+</div>
+</div><p>以上代码证明空数组 <code>[]</code> 没有实现 <code>Symbol.toPrimitive</code> 方法，不然 <code>toString/valueOf</code> 方法不会被调用。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">[</span><span class="p">]</span><span class="p">;</span>
+
+<span class="nx">a</span><span class="p">[</span><span class="nx">Symbol</span><span class="p">.</span><span class="nx">toPrimitive</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">hint</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hint</span><span class="p">)</span><span class="p">;</span>
+  <span class="k">return</span> <span class="mi">123</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">a</span> <span class="o">+</span> <span class="nx">a</span><span class="p">)</span><span class="p">;</span>
+<span class="c1">// default
+</span><span class="c1"></span><span class="c1">// default
+</span><span class="c1"></span><span class="c1">// 246
+</span></code></pre></td></tr></table>
+</div>
+</div><p>以上代码证明 <code>[]</code> 参与加法运算产生的 hint 为 <code>default</code>。</p>
+<p>根据前面提到的类型转换的规则，<code>[] + []</code> 表达式触发 <code>[]</code> 转值类型会依次调用 <code>valueOf()</code> 和 <code>toString()</code> 方法。</p>
+<p>然而，<code>[].valueOf()</code> 返回值是空数组自身，并不是值类型，因此继续尝试调用 <code>toString()</code> 方法。</p>
+<p><code>[].toString()</code> 的结果是空字符串 <code>''</code> 。因此，<code>[] + []</code> 表达式的计算结果是 <code>''</code>。</p>
+<p><strong>参考链接</strong></p>
+<ul>
+<li><a href="https://tc39.es/ecma262/#sec-toprimitive">tc39.es</a></li>
+<li><a href="https://javascript.info/object-toprimitive#toprimitive">javascript.info</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive">Symbol.toPrimitive</a></li>
+</ul>]]></content>
+        </item>
+        
+        <item>
+            <title>JavaScript 糟粕集</title>
+            <link>/posts/js-drawback/</link>
+            <pubDate>Fri, 10 Jan 2020 17:24:00 +0800</pubDate>
+            
+            <guid>/posts/js-drawback/</guid>
+            <description>&lt;p&gt;JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。&lt;/p&gt;
+&lt;p&gt;虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。&lt;/p&gt;</description>
+            <content type="html"><![CDATA[<p>JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。</p>
+<p>虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。</p>
+<p>如果在新版本中强行的移除，会导致无法预料的灾难，因此即使是 bug 依然得在新版本中保留。</p>
+<p>这对于 JavaScript 新秀很不友好，除了要掌握它新的特性，还得了解老版本留下来的坑。</p>
+<p>JavaScript 虽然有不少糟粕，但也有众多的优点。这也是为什么大多数 JSer 对它又恨又爱。</p>
+<p>吐槽归吐槽，理解 JavaScript 缺陷背后的原因，往往能帮助我们理解这门语言的设计初衷，从而更好的应用它。</p>
+<p>这篇文章将罗列 JavaScript 中常见的糟粕。</p>
+<h3 id="1typeof-null">1.typeof null</h3>
+<p>ES6 之后，JavaScript 中存在 7 中内置类型：空(null), 未定义(undefined), 布尔(boolean), 数字(number), 字符串(string), 对象(object), 符号(symbol)。</p>
+<p>我们可以使用 typeof 来检测值的类型，它会返回一个字符串。其中六种值都能返回正确的类型，唯独 null 一枝独秀：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">typeof</span> <span class="kc">null</span> <span class="o">===</span> <span class="s1">&#39;object&#39;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>null 作为值类型，typeof 返回的却是 object。因此在使用 typeof 检测对象的时候，要留意值为 null 的情况。</p>
+<p>正确判断 object 类型，应该排除 null 的情况。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">isObject</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">!</span><span class="nx">obj</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">obj</span> <span class="o">===</span> <span class="s1">&#39;object&#39;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="2-nan">2. NaN</h3>
+<p>NaN（Not a Number） 表示一个非数字字面量。在执行数学运算时，出现非数值类型，或者不合法的计算，会得到这个结果。</p>
+<p>需要注意的是 NaN 的类型仍旧是 number。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">typeof</span> <span class="kc">NaN</span> <span class="o">===</span> <span class="s1">&#39;number&#39;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><p>它有一个特殊的地方是，不等于任何值，包括它自己。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kc">NaN</span> <span class="o">===</span> <span class="kc">NaN</span> <span class="c1">// false
+</span><span class="c1"></span><span class="kc">NaN</span> <span class="o">!==</span> <span class="kc">NaN</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><p>ES6 之前全局的 isNaN() 用来检测一个变量是不是 NaN，但这个函数存在缺陷，建议使用 ES6 之后 Number 提供的 Number.isNaN() 方法。</p>
+<p>NaN 是一个全局的属性，效果等同于 Nubmer.isNaN。</p>
+<p>NaN 还是合法的变量名，如果在全局范围内误用，会出现意想不到的结果。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="kc">NaN</span> <span class="o">=</span> <span class="mi">101</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="kc">NaN</span><span class="p">)</span> <span class="c1">// 101
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nb">Number</span><span class="p">.</span><span class="nb">isNaN</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">0</span><span class="p">)</span><span class="p">)</span><span class="p">;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="3undefined-和-null">3.undefined 和 null</h3>
+<p>undefined 表示变量未定义，在其它语言中，如果变量（对象）没有定义，默认会初始化为 null。</p>
+<p>JavaScript 变量如果没有赋值，默认为 undefined，null 就显得有些多余。</p>
+<p>在概念上它们还有区别的，以坐地铁为例， undefined 表示没有位置，而 null 表示的是有位置，但是这个位置没人座。</p>
+<p>很少有场景需要区分的这么细，一般我们判断对象是否存在，都会把它转为布尔类型，null 和 undefined 转为布尔类型都是 false。</p>
+<p>undefined 其实是一个全局变量，它不可改，不可配置，不可枚举。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">desc</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">getOwnPropertyDescriptor</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="s1">&#39;undefined&#39;</span><span class="p">)</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">desc</span><span class="p">)</span><span class="p">;</span>
+<span class="cm">/**
+</span><span class="cm">{ value: undefined,
+</span><span class="cm">  writable: false,
+</span><span class="cm">  enumerable: false,
+</span><span class="cm">  configurable: false
+</span><span class="cm">}
+</span><span class="cm">*/</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在语法层面 undefined 能够作为普通变量来使用，因此存在一定的安全隐患。好在它不会覆盖全局的 undefined 的，误用的可能性并不大。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="kc">undefined</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="kc">undefined</span><span class="p">)</span> <span class="c1">// 1
+</span><span class="c1"></span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">global</span><span class="p">.</span><span class="kc">undefined</span><span class="p">)</span> <span class="c1">// undefined
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="4constructor">4.constructor</h3>
+<p>JavaScript 原本的设计是偏向于函数式的语言，因为作者当时所在的公司领导倾向于 Java 语言，所以引入了面向对象的特性。</p>
+<p>不同的是，JavaScript 是基于原型链继承的，能够在现有对象的基础上，创建新的对象，达到复用的目的。而不需要依赖于类。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">foo</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;foo&#39;</span><span class="p">,</span>
+  <span class="nx">getName</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kr">const</span> <span class="nx">bar</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">foo</span><span class="p">,</span> <span class="p">{</span>
+  <span class="nx">name</span><span class="o">:</span> <span class="p">{</span>
+    <span class="nx">value</span><span class="o">:</span> <span class="s1">&#39;bar&#39;</span>
+  <span class="p">}</span>
+<span class="p">}</span><span class="p">)</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">bar</span><span class="p">.</span><span class="nx">getName</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">;</span> <span class="c1">// bar
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>bar</code> 通过原型链复用了 <code>foo</code> 的 <code>getName()</code> 方法。</p>
+<p>为了实现面向对象的需求，强行在对象与原型对象中间插入了构造函数。构造函数默认会关联一个原型对象，在使用构造函数创建新对象时，会把该原型对象作为新对象的原型。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">Person</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kr">const</span> <span class="nx">me</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Person</span><span class="p">(</span><span class="s1">&#39;Smallfly&#39;</span><span class="p">)</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">me</span><span class="p">.</span><span class="nx">__proto__</span> <span class="o">===</span> <span class="nx">Person</span><span class="p">.</span><span class="nx">prototype</span><span class="p">)</span><span class="p">;</span> <span class="c1">// true
+</span></code></pre></td></tr></table>
+</div>
+</div><p>通过构造函数，搭建了 <code>me</code> 与原型对象 <code>Person.prototype</code> 的继承关系。</p>
+<p>这里将 <code>Person</code> 函数模拟成了一个类，并给它一个新的名字叫”构造函数“。</p>
+<p>然而，构造函数和普通函数没有区别，只是在调用时前面加了<code>new</code>关键字，普通函数就被称为了构造函数。</p>
+<p>如果我们希望函数作为构造函数调用，却忘记在前面加<code>new</code>关键字，也完全是合法的。并且还会产生额外的副作用，导致变量泄漏。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="nx">Person</span><span class="p">(</span><span class="s1">&#39;Smallfy&#39;</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">global</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span><span class="p">;</span> <span class="c1">// Smallfly
+</span></code></pre></td></tr></table>
+</div>
+</div><p>为了避免这种错误，通常采用在函数命名上作区分。在设计函数时，需要明确函数的用途，如果作为构造函数调用，就使用大写字母开头，而普通函数采小写字母开头。</p>
+<p>（未完待续&hellip; )</p>]]></content>
+        </item>
+        
+    </channel>
+</rss>

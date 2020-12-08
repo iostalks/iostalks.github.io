@@ -1,93 +1,78 @@
-<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/categories/</loc>
-    <lastmod>2020-08-28T10:51:52+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>/categories/objective-c/</loc>
-    <lastmod>2020-08-28T10:51:52+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>/post/objc-runtime/</loc>
-    <lastmod>2020-08-28T10:51:52+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>/post/</loc>
-    <lastmod>2020-08-28T10:51:52+08:00</lastmod>
+    <loc>/posts/</loc>
+    <lastmod>2020-12-05T09:22:10+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>/</loc>
+    <lastmod>2020-12-05T09:22:10+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>/posts/sdwebimage-memory-cache/</loc>
+    <lastmod>2020-12-05T09:22:10+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>/posts/objc-runtime/</loc>
     <lastmod>2020-08-28T10:51:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>/post/objc-memory-manage/</loc>
+    <loc>/posts/objc-memory-manage/</loc>
     <lastmod>2020-05-31T00:02:44+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>/post/http-cache/</loc>
+    <loc>/posts/http-cache/</loc>
     <lastmod>2020-04-14T08:14:53+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>/categories/%E7%BD%91%E7%BB%9C/</loc>
-    <lastmod>2020-04-14T08:14:53+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>/post/kills-cors-doubt/</loc>
+    <loc>/posts/kills-cors-doubt/</loc>
     <lastmod>2020-03-17T10:01:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>/categories/%E5%89%8D%E7%AB%AF/</loc>
-    <lastmod>2020-03-17T10:01:57+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>/categories/javascript/</loc>
+    <loc>/posts/js-object-toprimitive/</loc>
     <lastmod>2020-02-09T14:45:39+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>/post/js-object-toprimitive/</loc>
-    <lastmod>2020-02-09T14:45:39+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>/post/js-drawback/</loc>
+    <loc>/posts/js-drawback/</loc>
     <lastmod>2020-01-10T17:24:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>/blog/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>/series/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>

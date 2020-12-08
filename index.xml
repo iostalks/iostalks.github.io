@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Small Fly</title>
+    <title>Smallfly Blog</title>
     <link>/</link>
-    <description>Recent content on Small Fly</description>
+    <description>Recent content on Smallfly Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
-    <lastBuildDate>Fri, 28 Aug 2020 10:51:52 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 05 Dec 2020 09:22:10 +0800</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
+      <title>细品 SDWebImage 内存缓存</title>
+      <link>/posts/sdwebimage-memory-cache/</link>
+      <pubDate>Sat, 05 Dec 2020 09:22:10 +0800</pubDate>
+      
+      <guid>/posts/sdwebimage-memory-cache/</guid>
+      <description>本文对应 SDWebImage 源码版本 v5.10.0。 NSCache NSCache 是苹果系统提供的内存缓存框架，它类似于 NSMutableDictionary 的 Key-Value 形式，强引用存储的 value 对象。 不同的是，NSCache 会根据设</description>
+    </item>
+    
+    <item>
       <title>Objective-C Runtime 初始化全过程</title>
-      <link>/post/objc-runtime/</link>
+      <link>/posts/objc-runtime/</link>
       <pubDate>Fri, 28 Aug 2020 10:51:52 +0800</pubDate>
       
-      <guid>/post/objc-runtime/</guid>
+      <guid>/posts/objc-runtime/</guid>
       <description>&lt;p&gt;Runtime 是 Objective-C 实现动态化的基础，它的初始化过程分为三步：加载类，格式化类，调用 load。&lt;/p&gt;
 &lt;p&gt;这里有一份笔者加过注释的可运行 Runtime 源码：&lt;a href=&#34;https://github.com/iostalks/objc-runtime&#34;&gt;objc-runtime&lt;/a&gt;&lt;/p&gt;
 &lt;h2 id=&#34;加载类&#34;&gt;加载类&lt;/h2&gt;
@@ -27,10 +36,10 @@
     
     <item>
       <title>再读 《Objective-C 高级编程》内存管理篇</title>
-      <link>/post/objc-memory-manage/</link>
+      <link>/posts/objc-memory-manage/</link>
       <pubDate>Sun, 31 May 2020 00:02:44 +0800</pubDate>
       
-      <guid>/post/objc-memory-manage/</guid>
+      <guid>/posts/objc-memory-manage/</guid>
       <description>&lt;p&gt;以前，每隔一段时间会读一下《Objective-C 高级编程》这本书，每次读都有一些新的收获，算下来至少也有两三遍。&lt;/p&gt;
 &lt;p&gt;原本认为对 iOS 的内存管理机制，已经理解的很透彻了，但最近的一些经历，意识到自己的理解，还很肤浅，也不够全面。&lt;/p&gt;
 &lt;p&gt;全民 ARC 时代，很少需要程序员主动管理内存，无外乎是 delegate/block 之类的循环引用，以及更隐蔽一些的多对象引用环。&lt;/p&gt;
@@ -40,10 +49,10 @@
     
     <item>
       <title>HTTP 客户端缓存的实现原理</title>
-      <link>/post/http-cache/</link>
+      <link>/posts/http-cache/</link>
       <pubDate>Tue, 14 Apr 2020 08:14:53 +0800</pubDate>
       
-      <guid>/post/http-cache/</guid>
+      <guid>/posts/http-cache/</guid>
       <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;
 &lt;p&gt;HTTP 是一种同步的应用层协议，客户端在发出请求后，需要等待服务端的响应，在这个过程中，请求是阻塞的。&lt;/p&gt;
 &lt;p&gt;在端上响应时间是应用程序关键的性能指标，因此 HTTP 的响应速度，对提升应用程序的性能非常关键。&lt;/p&gt;
@@ -52,10 +61,10 @@
     
     <item>
       <title>一文读懂 CORS</title>
-      <link>/post/kills-cors-doubt/</link>
+      <link>/posts/kills-cors-doubt/</link>
       <pubDate>Tue, 17 Mar 2020 10:01:57 +0800</pubDate>
       
-      <guid>/post/kills-cors-doubt/</guid>
+      <guid>/posts/kills-cors-doubt/</guid>
       <description>&lt;p&gt;前端开发经常会遇到跨域问题，通过搜索基本都能解决，或者直接交给后端处理，只要浏览器不要再报下面的错误就行。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;XMLHttpRequest cannot load &lt;a href=&#34;https://api.example.com&#34;&gt;https://api.example.com&lt;/a&gt;. No &amp;lsquo;Access-Control-Allow-Origin&amp;rsquo; header is present on the requested resource. Origin &amp;lsquo;http://localhost:8100&amp;rsquo; is therefore not allowed access.&lt;/p&gt;
@@ -65,20 +74,20 @@
     
     <item>
       <title>JavaScript 对象转值的原理</title>
-      <link>/post/js-object-toprimitive/</link>
+      <link>/posts/js-object-toprimitive/</link>
       <pubDate>Sun, 09 Feb 2020 14:45:39 +0800</pubDate>
       
-      <guid>/post/js-object-toprimitive/</guid>
+      <guid>/posts/js-object-toprimitive/</guid>
       <description>&lt;p&gt;JavaScript 作为一门弱类型的语言，在类型转换上非常的灵活。它在提供便利的同时，也带来了不少困惑。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;[] + []&lt;/code&gt; , &lt;code&gt;[] + {}&lt;/code&gt; , &lt;code&gt;${obj}&lt;/code&gt; ，这些表达式计算结果是什么，又是如何得出这个结果的？&lt;/p&gt;</description>
     </item>
     
     <item>
       <title>JavaScript 糟粕集</title>
-      <link>/post/js-drawback/</link>
+      <link>/posts/js-drawback/</link>
       <pubDate>Fri, 10 Jan 2020 17:24:00 +0800</pubDate>
       
-      <guid>/post/js-drawback/</guid>
+      <guid>/posts/js-drawback/</guid>
       <description>&lt;p&gt;JavaScript 是 Brendan Eich 花了十天开发出来的，如此短暂的时间开发一门语言，难免会有考虑不周的地方。&lt;/p&gt;
 &lt;p&gt;虽然 EAMCScript 规范不断地更新迭代，然而很多浏览器可能还在使用老的规范，原本设计不合理的功能，已经在线上运行。&lt;/p&gt;</description>
     </item>

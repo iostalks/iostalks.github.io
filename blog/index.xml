@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Tags on Smallfly Blog</title>
-    <link>/tags/</link>
-    <description>Recent content in Tags on Smallfly Blog</description>
+    <title>Blog on Smallfly Blog</title>
+    <link>/blog/</link>
+    <description>Recent content in Blog on Smallfly Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Smallfly</copyright>
     
-	<atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
     
     
   </channel>
